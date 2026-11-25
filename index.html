@@ -95,20 +95,18 @@ details summary{cursor:pointer;color:var(--ink);font-weight:700}
       <div class="board" id="board"><p class="note">방에 들어오면 표시됩니다.</p></div>
       <details>
         <summary>규칙 요약</summary>
-        <p>각자 봉투(명사 5개)에서 히든 워드 1개를 고릅니다. 출제자는 힌트(단어 사전에 있는 한글 명사)를 내고, 모든 힌트는 유사도(%)와 함께 모두에게 실시간으로 공개됩니다. 95% 이상이 나오거나 힌트 개수·시간을 다 쓰면 힌트 제시가 끝나고, 나머지 플레이어가 각자 정답을 적어 동시에 공개합니다.</p>
+        <p>각자 봉투(명사 5개)에서 히든 워드 1개를 고릅니다. 출제자는 힌트(고유명사를 포함한 한글 명사)를 내고, 모든 힌트는 유사도(%)와 함께 모두에게 실시간으로 공개됩니다. 95% 이상이 나오거나 힌트 개수·시간을 다 쓰면 힌트 제시가 끝나고, 나머지 플레이어가 각자 정답을 적어 동시에 공개합니다.</p>
         <p>맞히면 1점, 아무도 못 맞히면 출제자가 1차 1점·2차 2점·3차 3점을 얻고 다음 차로 넘어갑니다(최대 3차). 2라운드는 모든 점수 2배입니다.</p>
       </details>
     </div>
   </aside>
 </main>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
-<script src="config.js"></script>
 <script>
 {
 const PRESETS={short:{label:"팀빌딩 단축 (힌트 3분·5개 / 정답 1분)",hintSec:180,hintMax:5,guessSec:60},
   full:{label:"기본 룰 (힌트 15분·10개 / 정답 5분)",hintSec:900,hintMax:10,guessSec:300}};
 const PREFIX="hiddenword-room-";
-const API=(window.HW_API||"").replace(/\/$/,"");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const norm=s=>String(s||"").replace(/\s+/g,"").trim();
 const $=id=>document.getElementById(id);
@@ -131,18 +129,17 @@ function inviteLink(){return location.origin+location.pathname+"#room="+code}
 /* ================= 방장(호스트) ================= */
 let G=null, DICT=null; const conns=new Map();
 async function loadDict(){
-  const r=await fetch("ko-fallback.json");const d=await r.json(),bin=atob(d.vec),n=d.words.length,dim=d.dim;
-  const V2=new Float32Array(n*dim);
-  for(let i=0;i<n;i++){let s=0;const b=i*dim;const row=new Array(dim);
-    for(let j=0;j<dim;j++){let c=bin.charCodeAt(b+j);if(c>127)c-=256;row[j]=c;s+=c*c}
-    s=Math.sqrt(s)||1;for(let j=0;j<dim;j++)V2[b+j]=row[j]/s}
-  DICT={words:d.words,env:d.env,dim,V:V2,idx:new Map(d.words.map((w,i)=>[w,i]))};
+  const [wt,pool]=await Promise.all([fetch("words.txt").then(r=>{if(!r.ok)throw 0;return r.text()}),fetch("pool.json").then(r=>r.json())]);
+  const words=wt.split("\n");
+  DICT={words,env:pool,idx:new Map(words.map((w,i)=>[w,i])),poolIdx:new Map(pool.map((w,i)=>[w,i])),tables:new Map()};
 }
-function sim(a,b){
-  if(norm(a)===norm(b))return 100;
-  const i=DICT.idx.get(a),j=DICT.idx.get(b),d=DICT.dim;if(i==null||j==null)return null;let c=0;
-  for(let k=0;k<d;k++)c+=DICT.V[i*d+k]*DICT.V[j*d+k];
-  return Math.max(0,Math.min(99,Math.round((c-0.10)/(0.837-0.10)*100)));
+async function tableFor(hw){
+  if(DICT.tables.has(hw))return DICT.tables.get(hw);
+  const k=DICT.poolIdx.get(hw);if(k==null)throw new Error("nopool");
+  const r=await fetch(`s/${k}.bin.gz`);if(!r.ok)throw new Error("fetch");
+  const ds=r.body.pipeThrough(new DecompressionStream("gzip"));
+  const t=new Uint8Array(await new Response(ds).arrayBuffer());
+  DICT.tables.set(hw,t);return t;
 }
 const cfg=()=>PRESETS[G.preset];
 const mult=()=>G.round===2?2:1;
@@ -165,7 +162,7 @@ function viewFor(pid){
     players:G.players.map(p=>({id:p.id,name:p.name,on:p.id===G.hostPid||!!(conns.get(p.id)&&conns.get(p.id).open),score:p.score,
       picked:!!p.hw,sub:p.sub,ok:showAns?p.ok:false,guess:showAns?p.guess:""})),
     me:{id:pid,env:me.env||[],used:me.used||[],hw:me.hw||null,guess:me.guess||""},
-    dictSize:DICT?DICT.words.length:0,ai:!!API,busy:!!G.busy};
+    dictSize:DICT?DICT.words.length:0,busy:!!G.busy};
 }
 function hostStart(){
   if(G.players.length<2){G.msg="2명(팀) 이상 모여야 시작할 수 있습니다.";return sync()}
@@ -174,7 +171,7 @@ function hostStart(){
   G.order=shuffle(G.players.map(p=>p.id));G.round=1;G.turn=0;G.msg="";G.phase="pick";sync();
 }
 function allPicked(){return G.players.every(p=>p.hw)}
-function beginTurn(){G.cha=1;G.hints=[];G.chaCount=0;G.timerEnd=0;G.msg="";G.phase="ready";
+function beginTurn(){const pp=P(presenterId());if(pp&&pp.hw&&DICT)tableFor(pp.hw).catch(()=>{});G.cha=1;G.hints=[];G.chaCount=0;G.timerEnd=0;G.msg="";G.phase="ready";
   if(!P(presenterId()))return nextPresenter();sync()}
 function startHint(){G.chaCount=0;G.timerEnd=Date.now()+cfg().hintSec*1000;G.phase="hint";G.msg="";sync()}
 function endHint(why){
@@ -240,22 +237,11 @@ function handle(pid,a){
   }
 }
 async function scoreHint(hw,w){
-  if(API){
-    for(let t=0;t<2;t++){
-      try{
-        const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),12000);
-        const r=await fetch(`${API}/sim?h=${encodeURIComponent(hw)}&w=${encodeURIComponent(w)}`,{signal:ctl.signal});clearTimeout(to);
-        if(r.ok){const d=await r.json();
-          if(d.valid===false)return {error:`「${w}」은(는) 명사로 인정되지 않았습니다. 다른 단어를 내 주세요. 횟수는 차감되지 않습니다.`};
-          if(Number.isFinite(d.score))return {score:d.score};}
-      }catch(e){}
-    }
-    const s=sim(hw,w);if(s!=null)return {score:s};
-    return {error:"AI 유사도 서버에 연결하지 못했습니다. 잠시 뒤 다시 내 주세요. 횟수는 차감되지 않습니다."};
-  }
-  const s=sim(hw,w);
-  if(s==null)return {error:`「${w}」은(는) 내장 단어 사전(${DICT.words.length.toLocaleString()}개)에 없는 단어입니다. 횟수는 차감되지 않습니다.`};
-  return {score:s};
+  if(norm(hw)===norm(w))return {score:100};
+  const i=DICT.idx.get(w);
+  if(i==null)return {error:`「${w}」은(는) 힌트 사전(명사 ${DICT.words.length.toLocaleString()}개)에 없는 단어입니다. 다른 명사로 내 주세요. 횟수는 차감되지 않습니다.`};
+  try{const t=await tableFor(hw);return {score:t[i]}}
+  catch(e){return {error:"점수표를 불러오지 못했습니다. 잠시 뒤 다시 내 주세요. 횟수는 차감되지 않습니다."}}
 }
 function hostTick(){
   if(!G)return;
@@ -400,7 +386,7 @@ function vHint(){
   ${errBox()}${hintList()}${V.busy?`<div class="msg">유사도를 계산하는 중…</div>`:""}
   ${pres?`<form id="hintForm" class="row"><input id="hintIn" placeholder="힌트 단어 (한글 명사)" autocomplete="off" style="flex:1 1 200px"><button type="submit"${V.busy?" disabled":""}>힌트 공개</button></form>
   <div class="row" style="margin-top:10px">${peekBtn()}<button class="ghost" id="stopHint">힌트 제시 마치기</button></div>
-  <p class="note">${V.ai?"AI가 유사도를 계산합니다. 고유명사(사람·지명·브랜드 이름)도 힌트로 쓸 수 있습니다.":`내장 단어 사전(명사 ${V.dictSize.toLocaleString()}개)에 있는 단어만 힌트로 쓸 수 있습니다.`}</p>`
+  <p class="note">힌트 사전: 일반명사·고유명사 ${V.dictSize.toLocaleString()}개 (사람·지명·브랜드 이름 포함). 띄어쓰기 없이 한 단어로 입력하세요.</p>`
   :`<p>출제자가 힌트를 내는 중입니다. 힌트가 나오면 바로 여기에 보입니다.</p>${isHost()?`<div class="row"><button class="ghost" id="stopHint">힌트 제시 마치기</button><button class="ghost" id="skipBtn">이 출제자 건너뛰기</button></div>`:""}`}`;
 }
 function vGuess(){
@@ -446,8 +432,7 @@ function render(){
   if(keep&&$(keep)&&typeof val==="string"&&$(keep).tagName==="INPUT"){$(keep).value=val;$(keep).focus()}
   const st=[];
   if(code)st.push(`<span class="pill">방 <b>${esc(code)}</b></span>`);
-  if(role&&V)st.push(`<span class="pill">유사도 <b>${V.ai?"AI":"내장 사전"}</b></span>`);
-  if(role)st.push(`<span class="pill${net==="online"?"":" off"}">연결 <b>${net==="online"?"정상":net==="connecting"?"연결 중":net==="nohost"?"방장 없음":net==="denied"?"거절됨":"재연결 중"}</b></span>`);
+    if(role)st.push(`<span class="pill${net==="online"?"":" off"}">연결 <b>${net==="online"?"정상":net==="connecting"?"연결 중":net==="nohost"?"방장 없음":net==="denied"?"거절됨":"재연결 중"}</b></span>`);
   if(V&&V.phase!=="lobby")st.push(`<span class="pill">${V.round}라운드 · <b>×${V.round===2?2:1}</b></span>`);
   if(V&&V.presenter)st.push(`<span class="pill">출제 <b>${esc(nameOf(V.presenter))}</b> · ${V.cha}차</span>`);
   $("status").innerHTML=st.join("");
