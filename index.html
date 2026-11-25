@@ -102,11 +102,13 @@ details summary{cursor:pointer;color:var(--ink);font-weight:700}
   </aside>
 </main>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script src="config.js"></script>
 <script>
 {
 const PRESETS={short:{label:"팀빌딩 단축 (힌트 3분·5개 / 정답 1분)",hintSec:180,hintMax:5,guessSec:60},
   full:{label:"기본 룰 (힌트 15분·10개 / 정답 5분)",hintSec:900,hintMax:10,guessSec:300}};
 const PREFIX="hiddenword-room-";
+const API=(window.HW_API||"").replace(/\/$/,"");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const norm=s=>String(s||"").replace(/\s+/g,"").trim();
 const $=id=>document.getElementById(id);
@@ -129,7 +131,7 @@ function inviteLink(){return location.origin+location.pathname+"#room="+code}
 /* ================= 방장(호스트) ================= */
 let G=null, DICT=null; const conns=new Map();
 async function loadDict(){
-  const r=await fetch("ko2000.json");const d=await r.json(),bin=atob(d.vec),n=d.words.length,dim=d.dim;
+  const r=await fetch("ko-fallback.json");const d=await r.json(),bin=atob(d.vec),n=d.words.length,dim=d.dim;
   const V2=new Float32Array(n*dim);
   for(let i=0;i<n;i++){let s=0;const b=i*dim;const row=new Array(dim);
     for(let j=0;j<dim;j++){let c=bin.charCodeAt(b+j);if(c>127)c-=256;row[j]=c;s+=c*c}
@@ -138,7 +140,7 @@ async function loadDict(){
 }
 function sim(a,b){
   if(norm(a)===norm(b))return 100;
-  const i=DICT.idx.get(a),j=DICT.idx.get(b),d=DICT.dim;let c=0;
+  const i=DICT.idx.get(a),j=DICT.idx.get(b),d=DICT.dim;if(i==null||j==null)return null;let c=0;
   for(let k=0;k<d;k++)c+=DICT.V[i*d+k]*DICT.V[j*d+k];
   return Math.max(0,Math.min(99,Math.round((c-0.10)/(0.837-0.10)*100)));
 }
@@ -163,7 +165,7 @@ function viewFor(pid){
     players:G.players.map(p=>({id:p.id,name:p.name,on:p.id===G.hostPid||!!(conns.get(p.id)&&conns.get(p.id).open),score:p.score,
       picked:!!p.hw,sub:p.sub,ok:showAns?p.ok:false,guess:showAns?p.guess:""})),
     me:{id:pid,env:me.env||[],used:me.used||[],hw:me.hw||null,guess:me.guess||""},
-    dictSize:DICT?DICT.words.length:0};
+    dictSize:DICT?DICT.words.length:0,ai:!!API,busy:!!G.busy};
 }
 function hostStart(){
   if(G.players.length<2){G.msg="2명(팀) 이상 모여야 시작할 수 있습니다.";return sync()}
@@ -213,13 +215,18 @@ function handle(pid,a){
     case "startHint":if(G.phase==="ready"&&(isPres||isHost))startHint();break;
     case "hint":{
       if(G.phase!=="hint"||!isPres)return;
+      if(G.busy)return err("앞 힌트를 계산하는 중입니다. 잠시만요.");
       const w=norm(a.w);
       if(!/^[가-힣]+$/.test(w))return err("힌트는 한글 명사로만 입력해 주세요.");
       if(G.hints.some(h=>h.w===w))return err("이미 제시한 힌트입니다.");
-      if(!DICT.idx.has(w))return err(`「${w}」은(는) 단어 사전(${DICT.words.length.toLocaleString()}개)에 없는 단어입니다. 횟수는 차감되지 않습니다.`);
-      if(w!==norm(p.hw)&&!DICT.idx.has(p.hw))return err("히든 워드가 사전에 없어 계산할 수 없습니다.");
-      const s=sim(p.hw,w);G.hints.push({w,s,cha:G.cha});G.chaCount++;
-      if(s>=95)return endHint("95");if(G.chaCount>=cfg().hintMax)return endHint("max");sync();break}
+      scoreHint(p.hw,w).then(r=>{
+        G.busy=false;
+        if(G.phase!=="hint"||presenterId()!==pid){sync();return}
+        if(r.error){sync();return err(r.error)}
+        G.hints.push({w,s:r.score,cha:G.cha});G.chaCount++;
+        if(r.score>=95)return endHint("95");if(G.chaCount>=cfg().hintMax)return endHint("max");sync();
+      });
+      G.busy=true;sync();break}
     case "stopHint":if(G.phase==="hint"&&(isPres||isHost))endHint("stop");break;
     case "guess":if(G.phase==="guess"&&p&&!isPres){p.guess=norm(a.w).slice(0,20);p.sub=!!p.guess;
       const need=G.players.filter(x=>x.id!==presenterId()&&(x.id===G.hostPid||(conns.get(x.id)&&conns.get(x.id).open)));
@@ -231,6 +238,24 @@ function handle(pid,a){
     case "skip":if(isHost&&["ready","hint"].includes(G.phase)){G.result={hit:true,text:"진행자가 이 출제자를 건너뛰었습니다."};nextPresenter()}break;
     case "again":if(isHost&&G.phase==="final"){G.phase="lobby";G.players.forEach(x=>{x.score=0;x.hw=null;x.used=[]});G.order=[];sync()}break;
   }
+}
+async function scoreHint(hw,w){
+  if(API){
+    for(let t=0;t<2;t++){
+      try{
+        const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),12000);
+        const r=await fetch(`${API}/sim?h=${encodeURIComponent(hw)}&w=${encodeURIComponent(w)}`,{signal:ctl.signal});clearTimeout(to);
+        if(r.ok){const d=await r.json();
+          if(d.valid===false)return {error:`「${w}」은(는) 명사로 인정되지 않았습니다. 다른 단어를 내 주세요. 횟수는 차감되지 않습니다.`};
+          if(Number.isFinite(d.score))return {score:d.score};}
+      }catch(e){}
+    }
+    const s=sim(hw,w);if(s!=null)return {score:s};
+    return {error:"AI 유사도 서버에 연결하지 못했습니다. 잠시 뒤 다시 내 주세요. 횟수는 차감되지 않습니다."};
+  }
+  const s=sim(hw,w);
+  if(s==null)return {error:`「${w}」은(는) 내장 단어 사전(${DICT.words.length.toLocaleString()}개)에 없는 단어입니다. 횟수는 차감되지 않습니다.`};
+  return {score:s};
 }
 function hostTick(){
   if(!G)return;
@@ -372,10 +397,10 @@ function vReady(){
 function vHint(){
   const pres=V.presenter===myPid,left=V.cfg.hintMax-V.chaCount;
   return `<div class="row" style="justify-content:space-between"><div><h2>${esc(nameOf(V.presenter))} · ${V.cha}차 힌트</h2><p class="lead" style="margin:0">남은 힌트 ${left}개</p></div><div class="clock" id="clock"></div></div>
-  ${errBox()}${hintList()}
-  ${pres?`<form id="hintForm" class="row"><input id="hintIn" placeholder="힌트 단어 (한글 명사)" autocomplete="off" style="flex:1 1 200px"><button type="submit">힌트 공개</button></form>
+  ${errBox()}${hintList()}${V.busy?`<div class="msg">유사도를 계산하는 중…</div>`:""}
+  ${pres?`<form id="hintForm" class="row"><input id="hintIn" placeholder="힌트 단어 (한글 명사)" autocomplete="off" style="flex:1 1 200px"><button type="submit"${V.busy?" disabled":""}>힌트 공개</button></form>
   <div class="row" style="margin-top:10px">${peekBtn()}<button class="ghost" id="stopHint">힌트 제시 마치기</button></div>
-  <p class="note">단어 사전(명사 ${V.dictSize.toLocaleString()}개)에 있는 단어만 힌트로 쓸 수 있습니다.</p>`
+  <p class="note">${V.ai?"AI가 유사도를 계산합니다. 고유명사(사람·지명·브랜드 이름)도 힌트로 쓸 수 있습니다.":`내장 단어 사전(명사 ${V.dictSize.toLocaleString()}개)에 있는 단어만 힌트로 쓸 수 있습니다.`}</p>`
   :`<p>출제자가 힌트를 내는 중입니다. 힌트가 나오면 바로 여기에 보입니다.</p>${isHost()?`<div class="row"><button class="ghost" id="stopHint">힌트 제시 마치기</button><button class="ghost" id="skipBtn">이 출제자 건너뛰기</button></div>`:""}`}`;
 }
 function vGuess(){
@@ -421,6 +446,7 @@ function render(){
   if(keep&&$(keep)&&typeof val==="string"&&$(keep).tagName==="INPUT"){$(keep).value=val;$(keep).focus()}
   const st=[];
   if(code)st.push(`<span class="pill">방 <b>${esc(code)}</b></span>`);
+  if(role&&V)st.push(`<span class="pill">유사도 <b>${V.ai?"AI":"내장 사전"}</b></span>`);
   if(role)st.push(`<span class="pill${net==="online"?"":" off"}">연결 <b>${net==="online"?"정상":net==="connecting"?"연결 중":net==="nohost"?"방장 없음":net==="denied"?"거절됨":"재연결 중"}</b></span>`);
   if(V&&V.phase!=="lobby")st.push(`<span class="pill">${V.round}라운드 · <b>×${V.round===2?2:1}</b></span>`);
   if(V&&V.presenter)st.push(`<span class="pill">출제 <b>${esc(nameOf(V.presenter))}</b> · ${V.cha}차</span>`);
