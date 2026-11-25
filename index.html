@@ -7,81 +7,79 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* VOICE: 게임쇼 진행 화면 — 크고 또렷하게, 스크린 너머에서도 읽히게
+/* VOICE: 게임쇼 — 크고 또렷하게, 폰에서도 한눈에
    IDEA: 봉투와 단어 카드, 유사도 게이지가 켜지는 스튜디오 보드
-   PICTURE: 실시간으로 쌓이는 힌트 카드와 % 게이지 막대가 화면의 주인공
-   COLOUR and TYPE: 깊은 와인 바탕, 종이 흰색 카드, 민트 강조 / Do Hyeon 제목 + Noto Sans KR
-   LAYOUT: 상단 상태줄, 왼쪽 무대, 오른쪽 점수판(좁으면 아래로) */
-:root{color-scheme:light dark;--bg:light-dark(#4a1238,#1c0816);--panel:light-dark(#5c1a47,#2a0f22);--card:light-dark(#fffaf4,#f3ece4);--ink:#fff7f0;--cink:#2a0f22;--mint:#3fe0b5;--gold:#ffd166;--red:#ff6b6b;--mute:light-dark(#e8c9dc,#bf98b1)}
-:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+   PICTURE: 실시간으로 쌓이는 힌트 카드와 % 게이지
+   COLOUR and TYPE: 깊은 와인 바탕, 종이 흰 카드, 민트 강조 / Do Hyeon + Noto Sans KR
+   LAYOUT: 상단 상태줄, 무대, 점수판(좁으면 아래) */
+:root{--bg:#3d0f2f;--panel:#521a42;--card:#fffaf4;--ink:#fff7f0;--cink:#2a0f22;--mint:#3fe0b5;--gold:#ffd166;--red:#ff6b6b;--mute:#e3c3d6}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip;min-height:100vh}
 h1,h2,h3,.big{font-family:"Do Hyeon","Noto Sans KR",sans-serif;font-weight:400;line-height:1.1;text-wrap:balance;margin:0}
-header{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding:14px max(4vw,16px);background:var(--panel)}
-header h1{font-size:30px}header h1 small{font-size:16px;color:var(--mute);margin-left:8px}
-.status{display:flex;flex-wrap:wrap;gap:8px}
-.pill{background:rgba(255,255,255,.1);border-radius:99px;padding:5px 14px;font-size:15px;white-space:nowrap}
-.pill b{color:var(--mint)}
-main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;padding:24px max(4vw,16px);max-width:1340px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:12px max(4vw,14px);background:var(--panel)}
+header h1{font-size:28px}header h1 small{font-size:15px;color:var(--mute);margin-left:8px}
+.status{display:flex;flex-wrap:wrap;gap:6px}
+.pill{background:rgba(255,255,255,.1);border-radius:99px;padding:4px 12px;font-size:14px;white-space:nowrap}
+.pill b{color:var(--mint)}.pill.off b{color:var(--red)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;padding:20px max(4vw,14px);max-width:1300px;margin:0 auto}
 @media(max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
-.stage{background:var(--panel);border-radius:22px;padding:clamp(18px,3vw,36px);min-height:460px}
-.stage h2{font-size:clamp(30px,4vw,46px);margin-bottom:8px}
-.lead{color:var(--mute);margin:0 0 20px}
-aside .stage{min-height:0;padding:20px}
-aside h3{font-size:24px;margin-bottom:12px}
+.stage{background:var(--panel);border-radius:20px;padding:clamp(16px,3vw,34px);min-height:420px}
+.stage h2{font-size:clamp(28px,4vw,44px);margin-bottom:8px}
+.lead{color:var(--mute);margin:0 0 18px}
+aside .stage{min-height:0;padding:18px}
+aside h3{font-size:22px;margin-bottom:10px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-button{font:inherit;font-weight:700;min-height:46px;padding:0 20px;border-radius:12px;border:0;cursor:pointer;background:var(--mint);color:#08251d}
+button{font:inherit;font-weight:700;min-height:46px;padding:0 18px;border-radius:12px;border:0;cursor:pointer;background:var(--mint);color:#08251d}
 button.ghost{background:transparent;color:var(--ink);border:2px solid rgba(255,255,255,.35)}
 button.warn{background:var(--red);color:#fff}
 button:disabled{opacity:.4;cursor:not-allowed}
-button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-input,textarea,select{font:inherit;font-size:16px;border-radius:12px;border:0;padding:11px 14px;background:var(--card);color:var(--cink);min-height:46px}
-textarea{width:100%;min-height:46px;resize:vertical}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+input,select{font:inherit;font-size:16px;border-radius:12px;border:0;padding:11px 14px;background:var(--card);color:var(--cink);min-height:46px}
 label{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-.env{background:var(--card);color:var(--cink);border-radius:14px;padding:14px;position:relative}
-.env h4{margin:0 0 6px;font-family:"Do Hyeon";font-weight:400;font-size:20px}
-.words{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
-.word{background:var(--card);color:var(--cink);font-family:"Do Hyeon";font-size:clamp(26px,3.4vw,36px);padding:18px 26px;border-radius:16px;border:4px solid transparent;min-height:auto}
+.words{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.word{background:var(--card);color:var(--cink);font-family:"Do Hyeon";font-size:clamp(24px,3.4vw,34px);padding:16px 22px;border-radius:16px;border:4px solid transparent;min-height:auto}
 .word.sel{border-color:var(--mint);box-shadow:0 0 0 4px rgba(63,224,181,.3)}
 .word:disabled{text-decoration:line-through}
-.cover{background:var(--card);color:var(--cink);border-radius:20px;padding:clamp(24px,4vw,48px);text-align:center}
-.cover .big{font-size:clamp(34px,5vw,56px);margin-bottom:10px}
-.clock{font-family:"Do Hyeon";font-size:clamp(44px,6vw,72px);color:var(--gold);line-height:1;white-space:nowrap}
+.cover{background:var(--card);color:var(--cink);border-radius:20px;padding:clamp(20px,4vw,44px);text-align:center}
+.cover .big{font-size:clamp(30px,5vw,52px);margin-bottom:10px}
+.cover .lead{color:#7b5670}
+.clock{font-family:"Do Hyeon";font-size:clamp(40px,6vw,68px);color:var(--gold);line-height:1;white-space:nowrap}
 .clock.low{color:var(--red)}
-.hints{display:grid;gap:8px;margin:18px 0}
-.hint{display:grid;grid-template-columns:2.2em minmax(0,9em) minmax(0,1fr) 4.4em;align-items:center;gap:12px;background:var(--card);color:var(--cink);border-radius:12px;padding:10px 14px;animation:pop .35s ease-out}
-.hint .n{font-family:"Do Hyeon";color:#9a6a86;font-size:20px}
-.hint .w{font-family:"Do Hyeon";font-size:26px;overflow-wrap:anywhere}
-.bar{height:16px;border-radius:99px;background:#eadbe3;overflow:hidden}
+.hints{display:grid;gap:8px;margin:16px 0}
+.hint{display:grid;grid-template-columns:2em minmax(0,8em) minmax(0,1fr) 4.2em;align-items:center;gap:10px;background:var(--card);color:var(--cink);border-radius:12px;padding:9px 12px;animation:pop .35s ease-out}
+.hint .n{font-family:"Do Hyeon";color:#9a6a86;font-size:19px}
+.hint .w{font-family:"Do Hyeon";font-size:25px;overflow-wrap:anywhere}
+.bar{height:15px;border-radius:99px;background:#eadbe3;overflow:hidden}
 .bar i{display:block;height:100%;border-radius:99px;background:var(--c,#3fe0b5)}
-.hint .p{font-family:"Do Hyeon";font-size:26px;text-align:right;white-space:nowrap}
-.cha{font-size:14px;color:var(--mute);margin:10px 0 2px}
+.hint .p{font-family:"Do Hyeon";font-size:25px;text-align:right;white-space:nowrap}
+.cha{font-size:14px;color:var(--mute);margin:8px 0 0}
 @keyframes pop{from{transform:translateY(8px);opacity:0}}
 @media(prefers-reduced-motion:reduce){.hint{animation:none}}
 @media(max-width:520px){.hint{grid-template-columns:minmax(0,1fr) 4em}.hint .n,.hint .bar{display:none}}
-.msg{background:rgba(255,255,255,.1);border-left:5px solid var(--gold);padding:12px 16px;border-radius:10px;margin:14px 0}
+.msg{background:rgba(255,255,255,.1);border-left:5px solid var(--gold);padding:11px 15px;border-radius:10px;margin:12px 0}
 .msg.err{border-color:var(--red)}
-.board{display:grid;gap:8px}
-.pl{display:grid;grid-template-columns:1.6em minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.07)}
+.board{display:grid;gap:7px}
+.pl{display:grid;grid-template-columns:1.6em minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 11px;border-radius:12px;background:rgba(255,255,255,.07)}
 .pl.now{background:var(--mint);color:#08251d}
-.pl .sc{font-family:"Do Hyeon";font-size:26px}
+.pl .sc{font-family:"Do Hyeon";font-size:24px}
 .pl .o{font-family:"Do Hyeon";color:var(--mute)}.pl.now .o{color:#08251d}
-.gl{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
-.gc{background:var(--card);color:var(--cink);border-radius:14px;padding:14px}
-.gc .big{font-size:30px;margin:4px 0}
+.pl small{display:block;font-size:12px;opacity:.75}
+.gl{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.gc{background:var(--card);color:var(--cink);border-radius:14px;padding:13px}
+.gc .big{font-size:28px;margin:4px 0}
 .gc.ok{outline:4px solid var(--mint)}
 .check{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--cink)}
 .check input{min-height:auto;width:22px;height:22px}
-.modal{position:fixed;inset:0;background:rgba(15,3,11,.86);display:grid;place-items:center;padding:16px;z-index:9}
-.modal .cover{max-width:520px;width:100%}
-.rank{display:grid;gap:10px;margin:18px 0}
-.rk{display:grid;grid-template-columns:2.4em minmax(0,1fr) auto;align-items:center;gap:14px;background:var(--card);color:var(--cink);border-radius:14px;padding:14px 18px;font-family:"Do Hyeon";font-size:28px}
+.rank{display:grid;gap:9px;margin:16px 0}
+.rk{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;align-items:center;gap:12px;background:var(--card);color:var(--cink);border-radius:14px;padding:12px 16px;font-family:"Do Hyeon";font-size:26px}
 .rk.first{background:var(--gold)}
-details{margin-top:18px;color:var(--mute);font-size:15px}
+.link{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin:10px 0 16px}
+.link code{font-size:15px;overflow-wrap:anywhere;flex:1 1 220px}
+.code{font-family:"Do Hyeon";font-size:44px;letter-spacing:.08em;color:var(--gold)}
+details{margin-top:16px;color:var(--mute);font-size:15px}
 details summary{cursor:pointer;color:var(--ink);font-weight:700}
-.peek{user-select:none;-webkit-user-select:none;touch-action:none}
 .note{font-size:13px;color:var(--mute)}
+.peek{user-select:none;-webkit-user-select:none;touch-action:none}
 </style>
 </head>
 <body>
@@ -90,268 +88,389 @@ details summary{cursor:pointer;color:var(--ink);font-weight:700}
   <div class="status" id="status"></div>
 </header>
 <main>
-  <section class="stage" id="stage" aria-live="polite"></section>
+  <section class="stage" id="stage" aria-live="polite"><p>불러오는 중…</p></section>
   <aside>
     <div class="stage">
       <h3>점수판</h3>
-      <div class="board" id="board"></div>
+      <div class="board" id="board"><p class="note">방에 들어오면 표시됩니다.</p></div>
       <details>
         <summary>규칙 요약</summary>
-        <p>출제자는 힌트(단어 사전에 있는 한글 명사)를 냅니다. 모든 힌트는 히든 워드와의 유사도(%)와 함께 즉시 공개됩니다. 95% 이상이 나오거나 힌트 개수·시간을 다 쓰면 힌트 제시가 끝나고, 나머지 플레이어가 동시에 정답을 공개합니다.</p>
-        <p>맞히면 1점, 아무도 못 맞히면 출제자가 1차 1점·2차 2점·3차 3점을 얻고 다음 차로 넘어갑니다(최대 3차). 2라운드는 모든 점수가 2배입니다.</p>
+        <p>각자 봉투(명사 5개)에서 히든 워드 1개를 고릅니다. 출제자는 힌트(단어 사전에 있는 한글 명사)를 내고, 모든 힌트는 유사도(%)와 함께 모두에게 실시간으로 공개됩니다. 95% 이상이 나오거나 힌트 개수·시간을 다 쓰면 힌트 제시가 끝나고, 나머지 플레이어가 각자 정답을 적어 동시에 공개합니다.</p>
+        <p>맞히면 1점, 아무도 못 맞히면 출제자가 1차 1점·2차 2점·3차 3점을 얻고 다음 차로 넘어갑니다(최대 3차). 2라운드는 모든 점수 2배입니다.</p>
       </details>
-      <div class="row" style="margin-top:16px"><button class="ghost" id="resetBtn">새 게임</button></div>
     </div>
   </aside>
 </main>
-<div id="modalRoot"></div>
+<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script>
 {
 const PRESETS={short:{label:"팀빌딩 단축 (힌트 3분·5개 / 정답 1분)",hintSec:180,hintMax:5,guessSec:60},
   full:{label:"기본 룰 (힌트 15분·10개 / 정답 5분)",hintSec:900,hintMax:10,guessSec:300}};
-const KEY="hiddenword-v2";
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const PREFIX="hiddenword-room-";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const norm=s=>String(s||"").replace(/\s+/g,"").trim();
 const $=id=>document.getElementById(id);
-let S, cache={}, DICT=null, aiState="pending", busy=false, modal=null, tick=null;
-
-function fresh(){return {phase:"setup",names:["1팀","2팀","3팀","4팀","5팀","6팀"],preset:"short",
-  players:[],order:[],round:1,turn:0,cha:1,hints:[],chaCount:0,pick:0,pickOpen:false,pickSel:null,timerEnd:0,msg:"",result:null}}
-function load(){try{const r=JSON.parse(localStorage.getItem(KEY)||"null");if(r&&r.phase){S=r.S;cache=r.cache||{};return}}catch(e){}S=fresh()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({phase:1,S,cache}))}catch(e){}}
-const cfg=()=>PRESETS[S.preset];
-const mult=()=>S.round===2?2:1;
-const presenter=()=>S.players[S.order[S.turn]];
 const color=p=>p>=95?"#ff6b6b":p>=70?"#ffb347":p>=40?"#3fe0b5":"#8fb8ff";
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const ss={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}};
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const newCode=()=>Array.from({length:6},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join("");
+const newId=()=>Math.random().toString(36).slice(2,10);
 
-/* ---------- similarity (한국어 단어 벡터, 브라우저 계산) ---------- */
+/* ================= 공통 상태 ================= */
+let role=null;          // "host" | "guest" | null
+let code=null, myPid=null, peer=null, net="offline";
+let V=null;             // 화면에 그릴 내 시점의 게임 상태
+let recvAt=0, localErr="", pickSel=null, peekOn=false;
+
+function roomFromHash(){const m=location.hash.match(/room=([A-Z0-9]{6})/i);return m?m[1].toUpperCase():null}
+function inviteLink(){return location.origin+location.pathname+"#room="+code}
+
+/* ================= 방장(호스트) ================= */
+let G=null, DICT=null; const conns=new Map();
 async function loadDict(){
-  try{
-    const r=await fetch("ko2000.json");if(!r.ok) throw 0;
-    const d=await r.json(),bin=atob(d.vec),n=d.words.length,dim=d.dim;
-    const raw=new Int8Array(n*dim);for(let i=0;i<raw.length;i++){const c=bin.charCodeAt(i);raw[i]=c>127?c-256:c}
-    const V=new Float32Array(n*dim);
-    for(let i=0;i<n;i++){let s=0;for(let j=0;j<dim;j++){const x=raw[i*dim+j];s+=x*x}s=Math.sqrt(s)||1;for(let j=0;j<dim;j++)V[i*dim+j]=raw[i*dim+j]/s}
-    DICT={words:d.words,env:d.env,dim,V,idx:new Map(d.words.map((w,i)=>[w,i]))};aiState="on";
-  }catch(e){aiState="off"}
-  render();
+  const r=await fetch("ko2000.json");const d=await r.json(),bin=atob(d.vec),n=d.words.length,dim=d.dim;
+  const V2=new Float32Array(n*dim);
+  for(let i=0;i<n;i++){let s=0;const b=i*dim;const row=new Array(dim);
+    for(let j=0;j<dim;j++){let c=bin.charCodeAt(b+j);if(c>127)c-=256;row[j]=c;s+=c*c}
+    s=Math.sqrt(s)||1;for(let j=0;j<dim;j++)V2[b+j]=row[j]/s}
+  DICT={words:d.words,env:d.env,dim,V:V2,idx:new Map(d.words.map((w,i)=>[w,i]))};
 }
-function similarity(hidden,hint){
-  if(norm(hidden)===norm(hint)) return 100;
-  const a=DICT.idx.get(hidden),b=DICT.idx.get(hint),d=DICT.dim;
-  let c=0;for(let j=0;j<d;j++)c+=DICT.V[a*d+j]*DICT.V[b*d+j];
+function sim(a,b){
+  if(norm(a)===norm(b))return 100;
+  const i=DICT.idx.get(a),j=DICT.idx.get(b),d=DICT.dim;let c=0;
+  for(let k=0;k<d;k++)c+=DICT.V[i*d+k]*DICT.V[j*d+k];
   return Math.max(0,Math.min(99,Math.round((c-0.10)/(0.837-0.10)*100)));
 }
-function dealEnvelopes(n){
-  const pool=shuffle(DICT.env.slice()),out=[];
-  for(let i=0;i<n;i++) out.push(pool.slice(i*5,i*5+5));
-  return out;
-}
+const cfg=()=>PRESETS[G.preset];
+const mult=()=>G.round===2?2:1;
+const P=id=>G.players.find(p=>p.id===id);
+const presenterId=()=>G.order[G.turn];
 
-/* ---------- flow ---------- */
-function startGame(){
-  const names=[...document.querySelectorAll("[data-name]")].map(i=>i.value.trim()).filter(Boolean);
-  if(names.length<2){S.msg="플레이어(팀)는 2명 이상이어야 합니다.";return render()}
-  if(new Set(names).size!==names.length){S.msg="플레이어 이름이 겹치지 않게 해 주세요.";return render()}
-  if(!DICT){S.msg="단어 사전을 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.";return render()}
-  S.preset=$("preset").value;
-  const pool=dealEnvelopes(names.length);
-  S.players=names.map((n,i)=>({name:n,env:pool[i],used:[],hw:null,score:0,guess:"",sub:false,ok:false}));
-  S.order=shuffle(names.map((_,i)=>i));
-  S.round=1;S.turn=0;S.pick=0;S.pickOpen=false;S.pickSel=null;S.msg="";S.phase="order";render();
+function hostSave(){ss.set(PREFIX+code,JSON.stringify({G,hostPid:myPid}))}
+function sync(){
+  hostSave();
+  for(const [pid,c] of conns){if(c.open)try{c.send({t:"state",v:viewFor(pid)})}catch(e){}}
+  V=viewFor(myPid);recvAt=Date.now();render();
 }
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function beginTurn(){S.cha=1;S.hints=[];S.chaCount=0;S.phase="ready";S.msg="";render()}
-function startHint(){S.chaCount=0;S.timerEnd=Date.now()+cfg().hintSec*1000;S.phase="hint";S.msg="";render()}
+function viewFor(pid){
+  const me=P(pid)||{};
+  const showAns=["reveal","result","final"].includes(G.phase);
+  return {phase:G.phase,preset:G.preset,cfg:cfg(),round:G.round,turn:G.turn,cha:G.cha,chaCount:G.chaCount,
+    hints:G.hints,msg:G.msg,result:G.result,order:G.order,presenter:["ready","hint","guess","reveal","result"].includes(G.phase)?presenterId():null,
+    remaining:G.timerEnd?Math.max(0,G.timerEnd-Date.now()):0,hostPid:G.hostPid,
+    answer:showAns&&G.phase!=="final"?P(presenterId())?.hw:null,
+    players:G.players.map(p=>({id:p.id,name:p.name,on:p.id===G.hostPid||!!(conns.get(p.id)&&conns.get(p.id).open),score:p.score,
+      picked:!!p.hw,sub:p.sub,ok:showAns?p.ok:false,guess:showAns?p.guess:""})),
+    me:{id:pid,env:me.env||[],used:me.used||[],hw:me.hw||null,guess:me.guess||""},
+    dictSize:DICT?DICT.words.length:0};
+}
+function hostStart(){
+  if(G.players.length<2){G.msg="2명(팀) 이상 모여야 시작할 수 있습니다.";return sync()}
+  const pool=shuffle(DICT.env.slice());
+  G.players.forEach((p,i)=>{p.env=pool.slice(i*5,i*5+5);p.used=[];p.hw=null;p.score=0;p.guess="";p.sub=false;p.ok=false});
+  G.order=shuffle(G.players.map(p=>p.id));G.round=1;G.turn=0;G.msg="";G.phase="pick";sync();
+}
+function allPicked(){return G.players.every(p=>p.hw)}
+function beginTurn(){G.cha=1;G.hints=[];G.chaCount=0;G.timerEnd=0;G.msg="";G.phase="ready";
+  if(!P(presenterId()))return nextPresenter();sync()}
+function startHint(){G.chaCount=0;G.timerEnd=Date.now()+cfg().hintSec*1000;G.phase="hint";G.msg="";sync()}
 function endHint(why){
-  S.msg=why==="95"?"유사도 95% 이상 힌트가 나와 힌트 제시가 끝났습니다.":why==="max"?`힌트 ${cfg().hintMax}개를 모두 제시했습니다.`:why==="time"?"힌트 제한 시간이 끝났습니다.":"진행자가 힌트 제시를 마쳤습니다.";
-  S.players.forEach(p=>{p.guess="";p.sub=false;p.ok=false});
-  S.timerEnd=Date.now()+cfg().guessSec*1000;S.phase="guess";render();
-}
-async function submitHint(){
-  if(busy) return;
-  const inp=$("hintIn"), w=norm(inp.value), p=presenter();
-  if(!/^[가-힣]+$/.test(w)){S.msg="힌트는 한글 명사로만 입력해 주세요.";return render()}
-  if(S.hints.some(h=>h.w===w)){S.msg="이미 제시한 힌트입니다.";return render()}
-  if(!DICT.idx.has(w)){S.msg=`「${w}」은(는) 단어 사전(${DICT.words.length.toLocaleString()}개)에 없는 단어입니다. 다른 명사로 바꿔 주세요. 제시 횟수는 차감되지 않습니다.`;return render()}
-  const score=similarity(p.hw,w);
-  busy=false;
-  S.hints.push({w,s:score,cha:S.cha});S.chaCount++;S.msg="";save();
-  if(score>=95) return endHint("95");
-  if(S.chaCount>=cfg().hintMax) return endHint("max");
-  render();
+  G.msg=why==="95"?"유사도 95% 이상 힌트가 나와 힌트 제시가 끝났습니다.":why==="max"?`힌트 ${cfg().hintMax}개를 모두 제시했습니다.`:why==="time"?"힌트 제한 시간이 끝났습니다.":"힌트 제시를 마쳤습니다.";
+  G.players.forEach(p=>{p.guess="";p.sub=false;p.ok=false});
+  G.timerEnd=Date.now()+cfg().guessSec*1000;G.phase="guess";sync();
 }
 function reveal(){
-  const p=presenter();
-  S.players.forEach((q,i)=>{if(i!==S.order[S.turn]) q.ok=!!q.guess&&norm(q.guess)===norm(p.hw)});
-  S.phase="reveal";render();
+  const ans=P(presenterId()).hw;
+  G.players.forEach(p=>{if(p.id!==presenterId())p.ok=!!p.guess&&norm(p.guess)===norm(ans)});
+  G.timerEnd=0;G.phase="reveal";sync();
 }
 function confirmResult(){
-  const pi=S.order[S.turn], winners=S.players.filter((q,i)=>i!==pi&&q.ok);
-  if(winners.length){winners.forEach(q=>q.score+=1*mult());
-    S.result={hit:true,text:`${winners.map(q=>q.name).join(", ")} 정답! 각 ${mult()}점 획득`}}
-  else{const pts=S.cha*mult();S.players[pi].score+=pts;
-    S.result={hit:false,text:`아무도 못 맞혔습니다. 출제자 ${S.players[pi].name} ${pts}점 획득`}}
-  S.phase="result";render();
+  const pid=presenterId(),w=G.players.filter(p=>p.id!==pid&&p.ok);
+  if(w.length){w.forEach(p=>p.score+=mult());G.result={hit:true,text:`${w.map(p=>p.name).join(", ")} 정답! 각 ${mult()}점`}}
+  else{const pts=G.cha*mult();P(pid).score+=pts;G.result={hit:false,text:`아무도 못 맞혔습니다. 출제자 ${P(pid).name} ${pts}점`}}
+  G.phase="result";sync();
 }
 function nextStep(){
-  if(!S.result.hit&&S.cha<3){S.cha++;S.phase="ready";return render()}
-  S.players[S.order[S.turn]].used.push(S.players[S.order[S.turn]].hw);
-  S.turn++;
-  if(S.turn<S.players.length) return beginTurn();
-  if(S.round===1){S.round=2;S.turn=0;S.pick=0;S.pickOpen=false;S.pickSel=null;S.players.forEach(p=>p.hw=null);S.phase="pick";return render()}
-  S.phase="final";render();
+  if(!G.result.hit&&G.cha<3){G.cha++;G.chaCount=0;G.timerEnd=0;G.phase="ready";G.msg="";return sync()}
+  nextPresenter();
+}
+function nextPresenter(){
+  const p=P(presenterId());if(p&&p.hw)p.used.push(p.hw);
+  G.turn++;
+  if(G.turn<G.order.length)return beginTurn();
+  if(G.round===1){G.round=2;G.turn=0;G.players.forEach(p=>p.hw=null);G.phase="pick";G.msg="";return sync()}
+  G.phase="final";G.timerEnd=0;sync();
+}
+function handle(pid,a){
+  const p=P(pid),isHost=pid===G.hostPid,isPres=pid===presenterId();
+  const err=m=>{if(pid===myPid){localErr=m;render()}else{const c=conns.get(pid);if(c&&c.open)c.send({t:"err",m})}};
+  switch(a.t){
+    case "preset":if(isHost&&G.phase==="lobby"&&PRESETS[a.v]){G.preset=a.v;sync()}break;
+    case "start":if(isHost&&G.phase==="lobby")hostStart();break;
+    case "kick":if(isHost&&G.phase==="lobby"&&a.id!==G.hostPid){G.players=G.players.filter(x=>x.id!==a.id);const c=conns.get(a.id);if(c){try{c.send({t:"kicked"})}catch(e){}setTimeout(()=>c.close(),300);conns.delete(a.id)}sync()}break;
+    case "pick":if(G.phase==="pick"&&p&&p.env.includes(a.w)&&!p.used.includes(a.w)){p.hw=a.w;if(allPicked()){G.turn=0;beginTurn()}else sync()}break;
+    case "startHint":if(G.phase==="ready"&&(isPres||isHost))startHint();break;
+    case "hint":{
+      if(G.phase!=="hint"||!isPres)return;
+      const w=norm(a.w);
+      if(!/^[가-힣]+$/.test(w))return err("힌트는 한글 명사로만 입력해 주세요.");
+      if(G.hints.some(h=>h.w===w))return err("이미 제시한 힌트입니다.");
+      if(!DICT.idx.has(w))return err(`「${w}」은(는) 단어 사전(${DICT.words.length.toLocaleString()}개)에 없는 단어입니다. 횟수는 차감되지 않습니다.`);
+      if(w!==norm(p.hw)&&!DICT.idx.has(p.hw))return err("히든 워드가 사전에 없어 계산할 수 없습니다.");
+      const s=sim(p.hw,w);G.hints.push({w,s,cha:G.cha});G.chaCount++;
+      if(s>=95)return endHint("95");if(G.chaCount>=cfg().hintMax)return endHint("max");sync();break}
+    case "stopHint":if(G.phase==="hint"&&(isPres||isHost))endHint("stop");break;
+    case "guess":if(G.phase==="guess"&&p&&!isPres){p.guess=norm(a.w).slice(0,20);p.sub=!!p.guess;
+      const need=G.players.filter(x=>x.id!==presenterId()&&(x.id===G.hostPid||(conns.get(x.id)&&conns.get(x.id).open)));
+      if(need.every(x=>x.sub))reveal();else sync()}break;
+    case "reveal":if(isHost&&G.phase==="guess")reveal();break;
+    case "ok":if(isHost&&G.phase==="reveal"){const q=P(a.id);if(q){q.ok=!!a.v;sync()}}break;
+    case "confirm":if(isHost&&G.phase==="reveal")confirmResult();break;
+    case "next":if(isHost&&G.phase==="result")nextStep();break;
+    case "skip":if(isHost&&["ready","hint"].includes(G.phase)){G.result={hit:true,text:"진행자가 이 출제자를 건너뛰었습니다."};nextPresenter()}break;
+    case "again":if(isHost&&G.phase==="final"){G.phase="lobby";G.players.forEach(x=>{x.score=0;x.hw=null;x.used=[]});G.order=[];sync()}break;
+  }
+}
+function hostTick(){
+  if(!G)return;
+  if(G.timerEnd&&Date.now()>=G.timerEnd){
+    if(G.phase==="hint")endHint("time");
+    else if(G.phase==="guess")reveal();
+  }
+}
+function onGuestConn(c){
+  c.on("data",d=>{
+    if(!d||typeof d!=="object")return;
+    if(d.t==="hello"){
+      let p=d.pid&&P(d.pid);
+      if(p&&G.phase==="lobby"&&conns.get(p.id)&&conns.get(p.id).open&&conns.get(p.id)!==c)p=null;
+      if(p&&p.id===G.hostPid)p=null;
+      if(!p){
+        if(G.phase!=="lobby"){try{c.send({t:"denied",m:"이미 게임이 시작된 방입니다. 방장에게 새 방을 요청하세요."})}catch(e){}return setTimeout(()=>c.close(),500)}
+        if(G.players.length>=8){try{c.send({t:"denied",m:"방이 가득 찼습니다(최대 8명)."})}catch(e){}return setTimeout(()=>c.close(),500)}
+        let name=String(d.name||"참가자").trim().slice(0,12)||"참가자",base=name,k=2;
+        while(G.players.some(x=>x.name===name))name=base+k++;
+        p={id:newId(),name,score:0,env:[],used:[],hw:null,guess:"",sub:false,ok:false};G.players.push(p);
+      }
+      const old=conns.get(p.id);if(old&&old!==c)try{old.close()}catch(e){}
+      c.pid=p.id;conns.set(p.id,c);
+      try{c.send({t:"welcome",pid:p.id})}catch(e){}
+      sync();return;
+    }
+    if(c.pid)handle(c.pid,d);
+  });
+  c.on("close",()=>{if(c.pid&&conns.get(c.pid)===c){conns.delete(c.pid);if(G&&G.phase==="guess"){
+    const need=G.players.filter(x=>x.id!==presenterId()&&(x.id===G.hostPid||(conns.get(x.id)&&conns.get(x.id).open)));
+    if(need.length&&need.every(x=>x.sub))return reveal()}sync()}});
+}
+async function becomeHost(name,existing){
+  role="host";net="connecting";render();
+  if(!DICT)await loadDict();
+  if(existing){G=existing.G;myPid=existing.hostPid}
+  else{myPid=newId();G={phase:"lobby",preset:"short",hostPid:myPid,players:[{id:myPid,name:String(name).trim().slice(0,12)||"방장",score:0,env:[],used:[],hw:null,guess:"",sub:false,ok:false}],
+    order:[],round:1,turn:0,cha:1,hints:[],chaCount:0,timerEnd:0,msg:"",result:null}}
+  hostSave();
+  let tries=0;
+  const open=()=>{
+    peer=new Peer("hw-"+code,{debug:0});
+    peer.on("open",()=>{net="online";sync()});
+    peer.on("connection",onGuestConn);
+    peer.on("disconnected",()=>{net="reconnecting";render();try{peer.reconnect()}catch(e){}});
+    peer.on("error",e=>{
+      if(e.type==="unavailable-id"&&tries++<12){net="connecting";render();try{peer.destroy()}catch(x){}setTimeout(open,2500)}
+      else if(e.type==="unavailable-id"){net="error";localErr="이 방 코드를 이미 다른 화면에서 방장으로 열고 있습니다. 그 화면을 닫고 새로고침하세요.";render()}
+      else if(["network","server-error","socket-error","socket-closed"].includes(e.type)){net="reconnecting";render()}
+    });
+  };
+  open();V=viewFor(myPid);recvAt=Date.now();render();
 }
 
-/* ---------- views ---------- */
-function vSetup(){
-  return `<h2>게임 준비</h2><p class="lead">진행자가 스크린에 띄워 운영하는 화면입니다. 플레이어(팀) 이름과 봉투 단어를 확인하고 시작하세요.</p>
-  ${S.msg?`<div class="msg err">${esc(S.msg)}</div>`:""}
-  <label for="preset">진행 시간</label>
-  <select id="preset">${Object.entries(PRESETS).map(([k,v])=>`<option value="${k}"${S.preset===k?" selected":""}>${v.label}</option>`).join("")}</select>
-  <h3 style="margin:22px 0 10px;font-size:24px">플레이어 (2~8명/팀)</h3>
-  <div class="grid">${S.names.map((n,i)=>`<div><label for="nm${i}">플레이어 ${i+1}</label><input id="nm${i}" data-name value="${esc(n)}" style="width:100%"></div>`).join("")}</div>
-  <div class="row" style="margin-top:10px"><button class="ghost" id="addP"${S.names.length>=8?" disabled":""}>플레이어 추가</button><button class="ghost" id="delP"${S.names.length<=2?" disabled":""}>마지막 플레이어 빼기</button></div>
-  <h3 style="margin:22px 0 4px;font-size:24px">단어 봉투</h3>
-  <p class="note">시작하면 단어 사전에서 봉투마다 명사 5개를 무작위로 넣습니다. 진행자도 미리 볼 수 없고, 각 조가 자기 봉투를 열 때만 보입니다.</p>
-  <div class="row" style="margin-top:26px"><button id="startBtn">추첨하고 시작</button></div>`;
+/* ================= 참가자(게스트) ================= */
+let gConn=null,gName="",retryTimer=null;
+function becomeGuest(name){
+  role="guest";gName=String(name).trim().slice(0,12)||"참가자";myPid=ls.get("hw-pid-"+code);net="connecting";render();
+  peer=new Peer({debug:0});
+  peer.on("open",connectHost);
+  peer.on("disconnected",()=>{try{peer.reconnect()}catch(e){}});
+  peer.on("error",e=>{
+    if(e.type==="peer-unavailable"){net="nohost";render();retry()}
+    else if(["network","server-error","socket-error","socket-closed"].includes(e.type)){net="reconnecting";render();retry()}
+  });
 }
-function vOrder(){
-  return `<h2>출제 순서 추첨 결과</h2><p class="lead">봉투는 무작위로 만들어 배정했습니다. 이 순서대로 1·2라운드 모두 출제합니다.</p>
-  <div class="rank">${S.order.map((pi,k)=>`<div class="rk"><span>${k+1}</span><span>${esc(S.players[pi].name)}</span><span></span></div>`).join("")}</div>
-  <button id="toPick">${S.round}라운드 히든 워드 고르기</button>`;
+function retry(){clearTimeout(retryTimer);retryTimer=setTimeout(()=>{if(peer&&!peer.destroyed&&peer.open)connectHost()},3000)}
+function connectHost(){
+  if(gConn&&gConn.open)return;
+  const c=peer.connect("hw-"+code,{reliable:true,serialization:"json"});gConn=c;
+  c.on("open",()=>{net="online";c.send({t:"hello",pid:myPid,name:gName});render()});
+  c.on("data",d=>{
+    if(!d||typeof d!=="object")return;
+    if(d.t==="welcome"){myPid=d.pid;ls.set("hw-pid-"+code,myPid)}
+    else if(d.t==="state"){V=d.v;recvAt=Date.now();if(V.phase!=="hint")localErr="";render()}
+    else if(d.t==="err"){localErr=d.m;render()}
+    else if(d.t==="denied"){net="denied";localErr=d.m;V=null;render()}
+    else if(d.t==="kicked"){net="denied";localErr="방장이 내보냈습니다.";V=null;ls.del("hw-pid-"+code);render()}
+  });
+  c.on("close",()=>{if(net==="denied")return;net="reconnecting";render();retry()});
+  c.on("error",()=>{net="reconnecting";render();retry()});
 }
-function vPick(){
-  const p=S.players[S.order[S.pick]];
-  if(!S.pickOpen) return `<div class="cover"><div class="big">${esc(p.name)} 차례</div>
-    <p>${esc(p.name)}만 화면을 보세요. 다른 사람은 고개를 돌려 주세요.</p>
-    <p class="note">${S.round}라운드 히든 워드 선택 · ${S.pick+1}/${S.players.length}</p>
-    <button id="openPick">봉투 열기</button></div>`;
-  return `<h2>${esc(p.name)}의 봉투</h2><p class="lead">${S.round}라운드 히든 워드로 쓸 단어 하나를 고르세요.${S.round===2?" 1라운드에 쓴 단어는 고를 수 없습니다.":""}</p>
-  <div class="words">${p.env.map(w=>`<button class="word${S.pickSel===w?" sel":""}" data-w="${esc(w)}"${p.used.includes(w)?" disabled":""}>${esc(w)}</button>`).join("")}</div>
-  <button id="donePick"${S.pickSel?"":" disabled"}>이 단어로 정하고 화면 가리기</button>`;
-}
+
+/* ================= 보내기 ================= */
+function act(a){localErr="";if(role==="host")handle(myPid,a);else if(gConn&&gConn.open)gConn.send(a);else{localErr="연결이 끊겼습니다. 다시 연결하는 중입니다.";render()}}
+
+/* ================= 화면 ================= */
+const nameOf=id=>(V.players.find(p=>p.id===id)||{}).name||"?";
+const isHost=()=>V&&V.hostPid===myPid;
+function remaining(){return Math.max(0,V.remaining-(Date.now()-recvAt))}
 function hintList(){
-  if(!S.hints.length) return `<p class="note">아직 제시된 힌트가 없습니다.</p>`;
+  if(!V.hints.length)return `<p class="note">아직 제시된 힌트가 없습니다.</p>`;
   let out="",last=0;
-  S.hints.forEach((h,i)=>{if(h.cha!==last){last=h.cha;out+=`<div class="cha">${h.cha}차 힌트</div>`}
+  V.hints.forEach((h,i)=>{if(h.cha!==last){last=h.cha;out+=`<div class="cha">${h.cha}차 힌트</div>`}
     out+=`<div class="hint"><span class="n">${i+1}</span><span class="w">${esc(h.w)}</span><span class="bar"><i style="width:${h.s}%;--c:${color(h.s)}"></i></span><span class="p">${h.s}%</span></div>`});
   return `<div class="hints">${out}</div>`;
 }
-function peekBtn(){return `<button class="ghost peek" id="peek">출제자 단어 확인 (누르는 동안 보임)</button>`}
+const errBox=()=>localErr?`<div class="msg err">${esc(localErr)}</div>`:"";
+function vEntry(){
+  const room=roomFromHash(),saved=ls.get("hw-name")||"";
+  if(room)return `<div class="cover"><div class="big">방 ${esc(room)} 참가</div><p class="lead">이름(또는 팀 이름)을 입력하고 들어가세요.</p>
+    <form id="joinForm" class="row" style="justify-content:center"><input id="nameIn" maxlength="12" placeholder="예: 3팀" value="${esc(saved)}" style="flex:1 1 200px;max-width:300px"><button type="submit">참가하기</button></form>${errBox()}</div>`;
+  return `<h2>방 만들기</h2><p class="lead">방을 만들면 초대 링크가 생깁니다. 링크로 들어온 사람끼리 한 게임에 연결됩니다.</p>
+    <form id="hostForm" class="row"><input id="nameIn" maxlength="12" placeholder="내 이름(또는 팀 이름)" value="${esc(saved)}" style="flex:1 1 220px;max-width:340px"><button type="submit">방 만들기</button></form>${errBox()}
+    <p class="note" style="margin-top:18px">방을 만든 사람(방장)의 화면이 게임을 관리합니다. 게임 중에는 방장 화면을 닫지 마세요.</p>`;
+}
+function vLobby(){
+  const host=isHost();
+  return `<h2>대기실</h2>
+  <p class="lead">${host?"아래 링크를 팀원에게 보내세요. 모두 들어오면 시작하세요.":"방장이 시작할 때까지 기다려 주세요."}</p>
+  <div class="code">${esc(code)}</div>
+  <div class="link"><code>${esc(inviteLink())}</code><button class="ghost" id="copyBtn">링크 복사</button></div>
+  ${V.msg?`<div class="msg err">${esc(V.msg)}</div>`:""}
+  <h3 style="font-size:22px;margin:6px 0 10px">참가자 ${V.players.length}/8</h3>
+  <div class="gl">${V.players.map(p=>`<div class="gc"><div class="big">${esc(p.name)}</div><div class="note" style="color:#7b5670">${p.id===V.hostPid?"방장":p.on?"연결됨":"연결 끊김"}${p.id===myPid?" · 나":""}</div>
+    ${host&&p.id!==V.hostPid?`<button class="ghost" data-kick="${esc(p.id)}" style="color:var(--cink);border-color:#c9a;margin-top:6px;min-height:36px">내보내기</button>`:""}</div>`).join("")}</div>
+  ${host?`<div style="margin-top:20px"><label for="preset">진행 시간</label><select id="preset">${Object.entries(PRESETS).map(([k,v])=>`<option value="${k}"${V.preset===k?" selected":""}>${v.label}</option>`).join("")}</select></div>
+  <div class="row" style="margin-top:16px"><button id="startBtn"${V.players.length<2?" disabled":""}>게임 시작</button></div>`:`<p class="note" style="margin-top:16px">진행 시간: ${esc(V.cfg.label)}</p>`}`;
+}
+function vPick(){
+  const me=V.me,done=!!V.players.find(p=>p.id===myPid)?.picked;
+  const waiting=V.players.filter(p=>!p.picked).map(p=>p.name);
+  if(done)return `<div class="cover"><div class="big">「${esc(me.hw)}」 선택 완료</div><p class="lead">다른 사람이 고를 때까지 기다려 주세요.</p><p class="lead">남은 사람: ${esc(waiting.join(", "))}</p></div>`;
+  if(pickSel===null||pickSel==="__closed")return `<div class="cover"><div class="big">${V.round}라운드 봉투</div><p class="lead">내 화면에만 보입니다. 주변 사람이 보지 않게 하고 여세요.</p><button id="openPick">봉투 열기</button>
+    <p class="note" style="color:#7b5670;margin-top:14px">출제 순서: ${V.order.map(nameOf).map(esc).join(" → ")}</p></div>`;
+  return `<h2>내 봉투</h2><p class="lead">${V.round}라운드 히든 워드로 쓸 단어 하나를 고르세요.${V.round===2?" 1라운드에 쓴 단어는 고를 수 없습니다.":""}</p>
+  <div class="words">${me.env.map(w=>`<button class="word${pickSel===w?" sel":""}" data-w="${esc(w)}"${me.used.includes(w)?" disabled":""}>${esc(w)}</button>`).join("")}</div>
+  <button id="donePick"${pickSel&&pickSel!=="__open"?"":" disabled"}>이 단어로 정하기</button>`;
+}
+function peekBtn(){return V.presenter===myPid?`<button class="ghost peek" id="peek">${peekOn?"내 히든 워드: "+esc(V.me.hw):"내 단어 확인 (누르는 동안)"}</button>`:""}
 function vReady(){
-  const p=presenter();
-  return `<h2>${esc(p.name)} 출제 · ${S.cha}차 힌트</h2>
-  <p class="lead">${S.cha===1?"출제자는 히든 워드와 관련된 한글 명사를 힌트로 냅니다.":`아무도 맞히지 못했습니다. 이번 ${S.cha}차에 아무도 못 맞히면 출제자는 ${S.cha*mult()}점을 얻습니다.`} 힌트는 ${cfg().hintMax}개, ${Math.round(cfg().hintSec/60)}분까지입니다.</p>
-  ${S.hints.length?hintList():""}
-  <div class="row"><button id="goHint">${S.cha}차 힌트 시작</button>${peekBtn()}</div>`;
+  const pres=V.presenter===myPid,cf=V.cfg;
+  return `<h2>${esc(nameOf(V.presenter))} 출제 · ${V.cha}차 힌트</h2>
+  <p class="lead">${V.cha===1?"출제자가 히든 워드와 관련된 명사를 힌트로 냅니다.":`아무도 못 맞혔습니다. 이번 ${V.cha}차에도 못 맞히면 출제자가 ${V.cha*(V.round===2?2:1)}점을 얻습니다.`} 힌트 ${cf.hintMax}개, ${Math.round(cf.hintSec/60)}분.</p>
+  ${V.hints.length?hintList():""}
+  <div class="row">${pres||isHost()?`<button id="goHint">${V.cha}차 힌트 시작</button>`:`<p>출제자가 시작하기를 기다리는 중…</p>`}${peekBtn()}${isHost()?`<button class="ghost" id="skipBtn">이 출제자 건너뛰기</button>`:""}</div>`;
 }
 function vHint(){
-  const left=cfg().hintMax-S.chaCount;
-  return `<div class="row" style="justify-content:space-between"><div><h2>${esc(presenter().name)} · ${S.cha}차 힌트</h2><p class="lead" style="margin:0">남은 힌트 ${left}개</p></div><div class="clock" id="clock"></div></div>
-  ${S.msg?`<div class="msg${busy?"":" err"}">${esc(S.msg)}</div>`:""}
-  ${hintList()}
-  <form id="hintForm" class="row">
-    <input id="hintIn" placeholder="힌트 단어 (한글 명사)" autocomplete="off" style="flex:1 1 220px" ${busy?"disabled":""}>
-    <button type="submit"${busy?" disabled":""}>${busy?"계산 중…":"힌트 공개"}</button>
-  </form>
-  <div class="row" style="margin-top:12px">${peekBtn()}<button class="ghost" id="stopHint">힌트 제시 마치기</button></div>
-  <p class="note">유사도는 한국어 단어 벡터(fastText, 명사 ${DICT?DICT.words.length.toLocaleString():""}개)로 계산합니다. 사전에 없는 단어는 힌트로 쓸 수 없습니다.</p>`;
+  const pres=V.presenter===myPid,left=V.cfg.hintMax-V.chaCount;
+  return `<div class="row" style="justify-content:space-between"><div><h2>${esc(nameOf(V.presenter))} · ${V.cha}차 힌트</h2><p class="lead" style="margin:0">남은 힌트 ${left}개</p></div><div class="clock" id="clock"></div></div>
+  ${errBox()}${hintList()}
+  ${pres?`<form id="hintForm" class="row"><input id="hintIn" placeholder="힌트 단어 (한글 명사)" autocomplete="off" style="flex:1 1 200px"><button type="submit">힌트 공개</button></form>
+  <div class="row" style="margin-top:10px">${peekBtn()}<button class="ghost" id="stopHint">힌트 제시 마치기</button></div>
+  <p class="note">단어 사전(명사 ${V.dictSize.toLocaleString()}개)에 있는 단어만 힌트로 쓸 수 있습니다.</p>`
+  :`<p>출제자가 힌트를 내는 중입니다. 힌트가 나오면 바로 여기에 보입니다.</p>${isHost()?`<div class="row"><button class="ghost" id="stopHint">힌트 제시 마치기</button><button class="ghost" id="skipBtn">이 출제자 건너뛰기</button></div>`:""}`}`;
 }
 function vGuess(){
-  const pi=S.order[S.turn];
-  return `<div class="row" style="justify-content:space-between"><div><h2>정답 맞히기</h2><p class="lead" style="margin:0">${esc(S.msg)}</p></div><div class="clock" id="clock"></div></div>
+  const pres=V.presenter===myPid,meP=V.players.find(p=>p.id===myPid)||{};
+  const pending=V.players.filter(p=>p.id!==V.presenter&&!p.sub).map(p=>p.name);
+  return `<div class="row" style="justify-content:space-between"><div><h2>정답 맞히기</h2><p class="lead" style="margin:0">${esc(V.msg)}</p></div><div class="clock" id="clock"></div></div>
   ${hintList()}
-  <p>각자 이름을 눌러 아무도 보지 않게 정답을 적으세요. 모두 적으면 동시에 공개합니다.</p>
-  <div class="gl">${S.players.map((q,i)=>i===pi?"":`<button class="${q.sub?"ghost":""}" data-g="${i}">${esc(q.name)} ${q.sub?"✓ 제출 완료":"정답 적기"}</button>`).join("")}</div>
-  <div class="row" style="margin-top:20px"><button id="revealBtn" class="warn">동시 공개</button></div>`;
+  ${pres?`<p>다른 사람들이 정답을 적는 중입니다.</p>`:meP.sub?`<div class="msg">제출했습니다: 「${esc(V.me.guess)}」. 모두 내면 동시에 공개됩니다. 시간 안에는 다시 고쳐 낼 수 있습니다.</div>`:""}
+  ${pres?"":`<form id="guessForm" class="row"><input id="guessIn" placeholder="정답 단어" autocomplete="off" style="flex:1 1 200px"><button type="submit">${meP.sub?"다시 제출":"정답 제출"}</button></form>`}
+  <p class="note" style="margin-top:12px">아직 안 낸 사람: ${esc(pending.join(", ")||"없음")}</p>
+  ${isHost()?`<div class="row" style="margin-top:12px"><button class="warn" id="revealBtn">지금 공개</button></div>`:""}`;
 }
 function vReveal(){
-  const pi=S.order[S.turn],p=S.players[pi];
-  return `<h2>정답은 「${esc(p.hw)}」</h2><p class="lead">자동 판정 결과입니다. 띄어쓰기 차이 등은 진행자가 체크로 바로잡은 뒤 확정하세요.</p>
-  <div class="gl">${S.players.map((q,i)=>i===pi?"":`<div class="gc${q.ok?" ok":""}"><div class="note" style="color:#7b5670">${esc(q.name)}</div><div class="big">${q.guess?esc(q.guess):"(미제출)"}</div>
-  <label class="check"><input type="checkbox" data-ok="${i}"${q.ok?" checked":""}> 정답 인정</label></div>`).join("")}</div>
-  <div class="row" style="margin-top:20px"><button id="confirmBtn">점수 확정</button></div>`;
+  return `<h2>정답은 「${esc(V.answer)}」</h2><p class="lead">${isHost()?"자동 판정 결과입니다. 필요하면 체크로 바로잡은 뒤 확정하세요.":"방장이 점수를 확정하는 중입니다."}</p>
+  <div class="gl">${V.players.filter(p=>p.id!==V.presenter).map(p=>`<div class="gc${p.ok?" ok":""}"><div class="note" style="color:#7b5670">${esc(p.name)}</div><div class="big">${p.guess?esc(p.guess):"(미제출)"}</div>
+  ${isHost()?`<label class="check"><input type="checkbox" data-ok="${esc(p.id)}"${p.ok?" checked":""}> 정답 인정</label>`:p.ok?"<b>정답</b>":""}</div>`).join("")}</div>
+  ${isHost()?`<div class="row" style="margin-top:18px"><button id="confirmBtn">점수 확정</button></div>`:""}`;
 }
 function vResult(){
-  const last=!S.result.hit&&S.cha<3?`${S.cha+1}차 힌트로`:"다음 출제자로";
-  return `<h2>${esc(S.result.text)}</h2><p class="lead">${S.result.hit||S.cha>=3?`${esc(presenter().name)}의 출제가 끝났습니다. 히든 워드는 「${esc(presenter().hw)}」였습니다.`:"출제자는 같은 히든 워드로 다음 차 힌트를 이어서 냅니다."}</p>
-  ${hintList()}<button id="nextBtn">${last}</button>`;
+  const more=!V.result.hit&&V.cha<3;
+  return `<h2>${esc(V.result.text)}</h2><p class="lead">${more?"출제자는 같은 히든 워드로 다음 차 힌트를 이어서 냅니다.":`히든 워드는 「${esc(V.answer)}」였습니다.`}</p>
+  ${hintList()}${isHost()?`<button id="nextBtn">${more?`${V.cha+1}차 힌트로`:"다음 출제자로"}</button>`:`<p class="note">방장이 다음으로 넘기면 진행됩니다.</p>`}`;
 }
 function vFinal(){
-  const sorted=S.players.slice().sort((a,b)=>b.score-a.score);let rank=0,prev=null;
-  return `<h2>최종 순위</h2><p class="lead">2라운드가 모두 끝났습니다.</p>
-  <div class="rank">${sorted.map((p,k)=>{if(p.score!==prev){rank=k+1;prev=p.score}return `<div class="rk${rank===1?" first":""}"><span>${rank}</span><span>${esc(p.name)}</span><span>${p.score}점</span></div>`}).join("")}</div>
-  <button id="again">같은 플레이어로 다시 하기</button>`;
+  const s=V.players.slice().sort((a,b)=>b.score-a.score);let rank=0,prev=null;
+  return `<h2>최종 순위</h2><div class="rank">${s.map((p,k)=>{if(p.score!==prev){rank=k+1;prev=p.score}return `<div class="rk${rank===1?" first":""}"><span>${rank}</span><span>${esc(p.name)}</span><span>${p.score}점</span></div>`}).join("")}</div>
+  ${isHost()?`<button id="againBtn">같은 사람들로 다시 하기</button>`:""}`;
 }
-function vModal(){
-  const q=S.players[modal];
-  return `<div class="modal"><form class="cover" id="gForm"><div class="big">${esc(q.name)}</div><p>다른 사람이 보지 않게 정답을 적으세요.</p>
-  <input id="gIn" autocomplete="off" placeholder="정답 단어" style="width:100%;margin-bottom:14px" value="${esc(q.guess)}">
-  <div class="row" style="justify-content:center"><button type="submit">제출하고 가리기</button><button type="button" class="ghost" id="gCancel" style="color:var(--cink);border-color:#b99">취소</button></div></form></div>`;
+function vNet(){
+  if(net==="denied")return `<div class="cover"><div class="big">들어갈 수 없습니다</div><p class="lead">${esc(localErr)}</p><button id="homeBtn">새 방 만들기 화면으로</button></div>`;
+  if(net==="nohost")return `<div class="cover"><div class="big">방장을 찾는 중…</div><p class="lead">방 ${esc(code)}의 방장 화면이 열려 있지 않거나 연결이 불안정합니다. 방장이 다시 열면 자동으로 연결됩니다.</p></div>`;
+  if(net==="error")return `<div class="cover"><div class="big">연결 오류</div><p class="lead">${esc(localErr)}</p></div>`;
+  return `<div class="cover"><div class="big">연결 중…</div><p class="lead">방 ${esc(code)}에 연결하고 있습니다.</p></div>`;
 }
-
 function render(){
-  const V={setup:vSetup,order:vOrder,pick:vPick,ready:vReady,hint:vHint,guess:vGuess,reveal:vReveal,result:vResult,final:vFinal};
-  $("stage").innerHTML=V[S.phase]();
-  $("modalRoot").innerHTML=modal!=null?vModal():"";
+  let html;
+  const M={lobby:vLobby,pick:vPick,ready:vReady,hint:vHint,guess:vGuess,reveal:vReveal,result:vResult,final:vFinal};
+  if(!role)html=vEntry();
+  else if(net==="denied"||net==="error"||!V||(role==="guest"&&net==="nohost"))html=vNet();
+  else html=M[V.phase]();
+  const keep=document.activeElement&&document.activeElement.id,val=keep&&document.activeElement.value;
+  $("stage").innerHTML=html;
+  if(keep&&$(keep)&&typeof val==="string"&&$(keep).tagName==="INPUT"){$(keep).value=val;$(keep).focus()}
   const st=[];
-  if(S.phase!=="setup"){st.push(`<span class="pill">${S.round}라운드 · 점수 <b>×${mult()}</b></span>`);
-    if(["ready","hint","guess","reveal","result"].includes(S.phase)) st.push(`<span class="pill">출제자 <b>${esc(presenter().name)}</b> · ${S.cha}차</span>`)}
-  st.push(`<span class="pill">단어 사전 <b>${aiState==="on"?"준비됨":aiState==="off"?"불러오기 실패":"불러오는 중"}</b></span>`);
+  if(code)st.push(`<span class="pill">방 <b>${esc(code)}</b></span>`);
+  if(role)st.push(`<span class="pill${net==="online"?"":" off"}">연결 <b>${net==="online"?"정상":net==="connecting"?"연결 중":net==="nohost"?"방장 없음":net==="denied"?"거절됨":"재연결 중"}</b></span>`);
+  if(V&&V.phase!=="lobby")st.push(`<span class="pill">${V.round}라운드 · <b>×${V.round===2?2:1}</b></span>`);
+  if(V&&V.presenter)st.push(`<span class="pill">출제 <b>${esc(nameOf(V.presenter))}</b> · ${V.cha}차</span>`);
   $("status").innerHTML=st.join("");
-  const cur=["ready","hint","guess","reveal","result"].includes(S.phase)?S.order[S.turn]:-1;
-  $("board").innerHTML=S.players.length?S.order.map((pi,k)=>{const p=S.players[pi];return `<div class="pl${pi===cur?" now":""}"><span class="o">${k+1}</span><span>${esc(p.name)}</span><span class="sc">${p.score}</span></div>`}).join(""):`<p class="note">게임을 시작하면 점수가 표시됩니다.</p>`;
-  bind();updateClock();save();
-  if(S.phase==="hint"&&!busy){const h=$("hintIn");if(h)h.focus()}
-  if(modal!=null){const g=$("gIn");if(g)g.focus()}
+  if(V)$("board").innerHTML=(V.order.length?V.order:V.players.map(p=>p.id)).map((id,k)=>{const p=V.players.find(x=>x.id===id);if(!p)return "";
+    return `<div class="pl${id===V.presenter?" now":""}"><span class="o">${k+1}</span><span>${esc(p.name)}${id===myPid?" (나)":""}<small>${p.on?(V.phase==="pick"?(p.picked?"선택 완료":"고르는 중"):V.phase==="guess"&&id!==V.presenter?(p.sub?"제출 완료":"작성 중"):""):"연결 끊김"}</small></span><span class="sc">${p.score}</span></div>`}).join("");
+  bind();tickClock();
 }
 function bind(){
   const on=(id,ev,fn)=>{const el=$(id);if(el)el.addEventListener(ev,fn)};
-  on("addP","click",()=>{keepSetup();S.names.push(`${S.names.length+1}팀`);render()});
-  on("delP","click",()=>{keepSetup();S.names.pop();render()});
-  on("startBtn","click",()=>{keepSetup();startGame()});
-  on("toPick","click",()=>{S.phase="pick";render()});
-  on("openPick","click",()=>{S.pickOpen=true;S.pickSel=null;render()});
-  document.querySelectorAll("[data-w]").forEach(b=>b.addEventListener("click",()=>{S.pickSel=b.dataset.w;render()}));
-  on("donePick","click",()=>{S.players[S.order[S.pick]].hw=S.pickSel;S.pickOpen=false;S.pickSel=null;S.pick++;
-    if(S.pick>=S.players.length){S.turn=0;beginTurn()}else render()});
-  on("goHint","click",startHint);
-  on("hintForm","submit",e=>{e.preventDefault();submitHint()});
-  on("stopHint","click",()=>endHint("stop"));
+  on("hostForm","submit",e=>{e.preventDefault();const n=$("nameIn").value.trim();if(!n){localErr="이름을 입력해 주세요.";return render()}ls.set("hw-name",n);code=newCode();history.replaceState(null,"","#room="+code);localErr="";becomeHost(n).catch(()=>{localErr="단어 사전을 불러오지 못했습니다. 새로고침해 주세요.";role=null;render()})});
+  on("joinForm","submit",e=>{e.preventDefault();const n=$("nameIn").value.trim();if(!n){localErr="이름을 입력해 주세요.";return render()}ls.set("hw-name",n);code=roomFromHash();localErr="";becomeGuest(n)});
+  on("copyBtn","click",async()=>{try{await navigator.clipboard.writeText(inviteLink());$("copyBtn").textContent="복사됨"}catch(e){$("copyBtn").textContent="길게 눌러 복사하세요"}});
+  on("preset","change",()=>act({t:"preset",v:$("preset").value}));
+  on("startBtn","click",()=>act({t:"start"}));
+  document.querySelectorAll("[data-kick]").forEach(b=>b.addEventListener("click",()=>act({t:"kick",id:b.dataset.kick})));
+  on("openPick","click",()=>{pickSel="__open";render()});
+  document.querySelectorAll("[data-w]").forEach(b=>b.addEventListener("click",()=>{pickSel=b.dataset.w;render()}));
+  on("donePick","click",()=>{act({t:"pick",w:pickSel});pickSel=null});
+  on("goHint","click",()=>act({t:"startHint"}));
+  on("skipBtn","click",()=>act({t:"skip"}));
+  on("hintForm","submit",e=>{e.preventDefault();const w=$("hintIn").value;$("hintIn").value="";act({t:"hint",w})});
+  on("stopHint","click",()=>act({t:"stopHint"}));
+  on("guessForm","submit",e=>{e.preventDefault();const w=$("guessIn").value.trim();if(!w)return;$("guessIn").value="";act({t:"guess",w})});
+  on("revealBtn","click",()=>act({t:"reveal"}));
+  document.querySelectorAll("[data-ok]").forEach(c=>c.addEventListener("change",()=>act({t:"ok",id:c.dataset.ok,v:c.checked})));
+  on("confirmBtn","click",()=>act({t:"confirm"}));
+  on("nextBtn","click",()=>act({t:"next"}));
+  on("againBtn","click",()=>act({t:"again"}));
+  on("homeBtn","click",()=>{location.hash="";location.reload()});
   const pk=$("peek");
-  if(pk){const show=()=>{pk.textContent=`히든 워드: ${presenter().hw}`},hide=()=>{pk.textContent="출제자 단어 확인 (누르는 동안 보임)"};
-    pk.addEventListener("pointerdown",show);["pointerup","pointerleave","pointercancel","blur"].forEach(ev=>pk.addEventListener(ev,hide))}
-  document.querySelectorAll("[data-g]").forEach(b=>b.addEventListener("click",()=>{modal=Number(b.dataset.g);render()}));
-  on("gForm","submit",e=>{e.preventDefault();const q=S.players[modal];q.guess=norm($("gIn").value);q.sub=!!q.guess;modal=null;render()});
-  on("gCancel","click",()=>{modal=null;render()});
-  on("revealBtn","click",reveal);
-  document.querySelectorAll("[data-ok]").forEach(c=>c.addEventListener("change",()=>{S.players[Number(c.dataset.ok)].ok=c.checked;render()}));
-  on("confirmBtn","click",confirmResult);
-  on("nextBtn","click",nextStep);
-  on("again","click",()=>{S.names=S.players.map(p=>p.name);S.phase="setup";S.players=[];S.order=[];render()});
+  if(pk){const s=()=>{peekOn=true;pk.textContent="내 히든 워드: "+V.me.hw},h=()=>{peekOn=false;pk.textContent="내 단어 확인 (누르는 동안)"};
+    pk.addEventListener("pointerdown",s);["pointerup","pointerleave","pointercancel"].forEach(ev=>pk.addEventListener(ev,h))}
 }
-function keepSetup(){
-  const n=[...document.querySelectorAll("[data-name]")];if(n.length)S.names=n.map(i=>i.value);
-  const p=$("preset");if(p)S.preset=p.value;
+function tickClock(){
+  const c=$("clock");if(!c||!V)return;
+  const s=Math.ceil(remaining()/1000);
+  c.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;c.classList.toggle("low",s<=30);
 }
-function updateClock(){
-  const c=$("clock");if(!c)return;
-  const ms=Math.max(0,S.timerEnd-Date.now()),s=Math.ceil(ms/1000);
-  c.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
-  c.classList.toggle("low",s<=30);
-  if(ms<=0&&S.phase==="hint"&&!busy) endHint("time");
-  else if(ms<=0&&S.phase==="guess") c.textContent="시간 종료";
-}
-$("resetBtn").addEventListener("click",()=>{
-  if($("resetBtn").dataset.arm){S=fresh();cache={};modal=null;delete $("resetBtn").dataset.arm;$("resetBtn").textContent="새 게임";render()}
-  else{$("resetBtn").dataset.arm="1";$("resetBtn").textContent="한 번 더 누르면 초기화";setTimeout(()=>{const b=$("resetBtn");if(b){delete b.dataset.arm;b.textContent="새 게임"}},3000)}
-});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal!=null){modal=null;render()}});
+setInterval(()=>{tickClock();if(role==="host")hostTick()},300);
 
-load();render();
-tick=setInterval(updateClock,250);
-loadDict();
+/* ================= 시작 ================= */
+code=roomFromHash();
+if(code){
+  const saved=ss.get(PREFIX+code);
+  if(saved){try{const s=JSON.parse(saved);becomeHost("",s).catch(()=>{localErr="단어 사전을 불러오지 못했습니다.";render()})}catch(e){render()}}
+  else render();
+}else render();
+window.addEventListener("hashchange",()=>{if(!role)render()});
+if(typeof Peer==="undefined"){localErr="연결 모듈을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.";render()}
 }
 </script>
 </body>
