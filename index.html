@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>히든 워드 게임</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 게임쇼 진행 화면 — 크고 또렷하게, 스크린 너머에서도 읽히게
+   IDEA: 봉투와 단어 카드, 유사도 게이지가 켜지는 스튜디오 보드
+   PICTURE: 실시간으로 쌓이는 힌트 카드와 % 게이지 막대가 화면의 주인공
+   COLOUR and TYPE: 깊은 와인 바탕, 종이 흰색 카드, 민트 강조 / Do Hyeon 제목 + Noto Sans KR
+   LAYOUT: 상단 상태줄, 왼쪽 무대, 오른쪽 점수판(좁으면 아래로) */
+:root{color-scheme:light dark;--bg:light-dark(#4a1238,#1c0816);--panel:light-dark(#5c1a47,#2a0f22);--card:light-dark(#fffaf4,#f3ece4);--ink:#fff7f0;--cink:#2a0f22;--mint:#3fe0b5;--gold:#ffd166;--red:#ff6b6b;--mute:light-dark(#e8c9dc,#bf98b1)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip;min-height:100vh}
+h1,h2,h3,.big{font-family:"Do Hyeon","Noto Sans KR",sans-serif;font-weight:400;line-height:1.1;text-wrap:balance;margin:0}
+header{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding:14px max(4vw,16px);background:var(--panel)}
+header h1{font-size:30px}header h1 small{font-size:16px;color:var(--mute);margin-left:8px}
+.status{display:flex;flex-wrap:wrap;gap:8px}
+.pill{background:rgba(255,255,255,.1);border-radius:99px;padding:5px 14px;font-size:15px;white-space:nowrap}
+.pill b{color:var(--mint)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;padding:24px max(4vw,16px);max-width:1340px;margin:0 auto}
+@media(max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--panel);border-radius:22px;padding:clamp(18px,3vw,36px);min-height:460px}
+.stage h2{font-size:clamp(30px,4vw,46px);margin-bottom:8px}
+.lead{color:var(--mute);margin:0 0 20px}
+aside .stage{min-height:0;padding:20px}
+aside h3{font-size:24px;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button{font:inherit;font-weight:700;min-height:46px;padding:0 20px;border-radius:12px;border:0;cursor:pointer;background:var(--mint);color:#08251d}
+button.ghost{background:transparent;color:var(--ink);border:2px solid rgba(255,255,255,.35)}
+button.warn{background:var(--red);color:#fff}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+input,textarea,select{font:inherit;font-size:16px;border-radius:12px;border:0;padding:11px 14px;background:var(--card);color:var(--cink);min-height:46px}
+textarea{width:100%;min-height:46px;resize:vertical}
+label{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.env{background:var(--card);color:var(--cink);border-radius:14px;padding:14px;position:relative}
+.env h4{margin:0 0 6px;font-family:"Do Hyeon";font-weight:400;font-size:20px}
+.words{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
+.word{background:var(--card);color:var(--cink);font-family:"Do Hyeon";font-size:clamp(26px,3.4vw,36px);padding:18px 26px;border-radius:16px;border:4px solid transparent;min-height:auto}
+.word.sel{border-color:var(--mint);box-shadow:0 0 0 4px rgba(63,224,181,.3)}
+.word:disabled{text-decoration:line-through}
+.cover{background:var(--card);color:var(--cink);border-radius:20px;padding:clamp(24px,4vw,48px);text-align:center}
+.cover .big{font-size:clamp(34px,5vw,56px);margin-bottom:10px}
+.clock{font-family:"Do Hyeon";font-size:clamp(44px,6vw,72px);color:var(--gold);line-height:1;white-space:nowrap}
+.clock.low{color:var(--red)}
+.hints{display:grid;gap:8px;margin:18px 0}
+.hint{display:grid;grid-template-columns:2.2em minmax(0,9em) minmax(0,1fr) 4.4em;align-items:center;gap:12px;background:var(--card);color:var(--cink);border-radius:12px;padding:10px 14px;animation:pop .35s ease-out}
+.hint .n{font-family:"Do Hyeon";color:#9a6a86;font-size:20px}
+.hint .w{font-family:"Do Hyeon";font-size:26px;overflow-wrap:anywhere}
+.bar{height:16px;border-radius:99px;background:#eadbe3;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--c,#3fe0b5)}
+.hint .p{font-family:"Do Hyeon";font-size:26px;text-align:right;white-space:nowrap}
+.cha{font-size:14px;color:var(--mute);margin:10px 0 2px}
+@keyframes pop{from{transform:translateY(8px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.hint{animation:none}}
+@media(max-width:520px){.hint{grid-template-columns:minmax(0,1fr) 4em}.hint .n,.hint .bar{display:none}}
+.msg{background:rgba(255,255,255,.1);border-left:5px solid var(--gold);padding:12px 16px;border-radius:10px;margin:14px 0}
+.msg.err{border-color:var(--red)}
+.board{display:grid;gap:8px}
+.pl{display:grid;grid-template-columns:1.6em minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.07)}
+.pl.now{background:var(--mint);color:#08251d}
+.pl .sc{font-family:"Do Hyeon";font-size:26px}
+.pl .o{font-family:"Do Hyeon";color:var(--mute)}.pl.now .o{color:#08251d}
+.gl{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.gc{background:var(--card);color:var(--cink);border-radius:14px;padding:14px}
+.gc .big{font-size:30px;margin:4px 0}
+.gc.ok{outline:4px solid var(--mint)}
+.check{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--cink)}
+.check input{min-height:auto;width:22px;height:22px}
+.modal{position:fixed;inset:0;background:rgba(15,3,11,.86);display:grid;place-items:center;padding:16px;z-index:9}
+.modal .cover{max-width:520px;width:100%}
+.rank{display:grid;gap:10px;margin:18px 0}
+.rk{display:grid;grid-template-columns:2.4em minmax(0,1fr) auto;align-items:center;gap:14px;background:var(--card);color:var(--cink);border-radius:14px;padding:14px 18px;font-family:"Do Hyeon";font-size:28px}
+.rk.first{background:var(--gold)}
+details{margin-top:18px;color:var(--mute);font-size:15px}
+details summary{cursor:pointer;color:var(--ink);font-weight:700}
+.peek{user-select:none;-webkit-user-select:none;touch-action:none}
+.note{font-size:13px;color:var(--mute)}
+</style>
+</head>
+<body>
+<header>
+  <h1>히든 워드<small>숨은 단어 맞히기</small></h1>
+  <div class="status" id="status"></div>
+</header>
+<main>
+  <section class="stage" id="stage" aria-live="polite"></section>
+  <aside>
+    <div class="stage">
+      <h3>점수판</h3>
+      <div class="board" id="board"></div>
+      <details>
+        <summary>규칙 요약</summary>
+        <p>출제자는 힌트(단어 사전에 있는 한글 명사)를 냅니다. 모든 힌트는 히든 워드와의 유사도(%)와 함께 즉시 공개됩니다. 95% 이상이 나오거나 힌트 개수·시간을 다 쓰면 힌트 제시가 끝나고, 나머지 플레이어가 동시에 정답을 공개합니다.</p>
+        <p>맞히면 1점, 아무도 못 맞히면 출제자가 1차 1점·2차 2점·3차 3점을 얻고 다음 차로 넘어갑니다(최대 3차). 2라운드는 모든 점수가 2배입니다.</p>
+      </details>
+      <div class="row" style="margin-top:16px"><button class="ghost" id="resetBtn">새 게임</button></div>
+    </div>
+  </aside>
+</main>
+<div id="modalRoot"></div>
+<script>
+{
+const PRESETS={short:{label:"팀빌딩 단축 (힌트 3분·5개 / 정답 1분)",hintSec:180,hintMax:5,guessSec:60},
+  full:{label:"기본 룰 (힌트 15분·10개 / 정답 5분)",hintSec:900,hintMax:10,guessSec:300}};
+const KEY="hiddenword-v2";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm=s=>String(s||"").replace(/\s+/g,"").trim();
+const $=id=>document.getElementById(id);
+let S, cache={}, DICT=null, aiState="pending", busy=false, modal=null, tick=null;
+
+function fresh(){return {phase:"setup",names:["1팀","2팀","3팀","4팀","5팀","6팀"],preset:"short",
+  players:[],order:[],round:1,turn:0,cha:1,hints:[],chaCount:0,pick:0,pickOpen:false,pickSel:null,timerEnd:0,msg:"",result:null}}
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY)||"null");if(r&&r.phase){S=r.S;cache=r.cache||{};return}}catch(e){}S=fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({phase:1,S,cache}))}catch(e){}}
+const cfg=()=>PRESETS[S.preset];
+const mult=()=>S.round===2?2:1;
+const presenter=()=>S.players[S.order[S.turn]];
+const color=p=>p>=95?"#ff6b6b":p>=70?"#ffb347":p>=40?"#3fe0b5":"#8fb8ff";
+
+/* ---------- similarity (한국어 단어 벡터, 브라우저 계산) ---------- */
+async function loadDict(){
+  try{
+    const r=await fetch("ko2000.json");if(!r.ok) throw 0;
+    const d=await r.json(),bin=atob(d.vec),n=d.words.length,dim=d.dim;
+    const raw=new Int8Array(n*dim);for(let i=0;i<raw.length;i++){const c=bin.charCodeAt(i);raw[i]=c>127?c-256:c}
+    const V=new Float32Array(n*dim);
+    for(let i=0;i<n;i++){let s=0;for(let j=0;j<dim;j++){const x=raw[i*dim+j];s+=x*x}s=Math.sqrt(s)||1;for(let j=0;j<dim;j++)V[i*dim+j]=raw[i*dim+j]/s}
+    DICT={words:d.words,env:d.env,dim,V,idx:new Map(d.words.map((w,i)=>[w,i]))};aiState="on";
+  }catch(e){aiState="off"}
+  render();
+}
+function similarity(hidden,hint){
+  if(norm(hidden)===norm(hint)) return 100;
+  const a=DICT.idx.get(hidden),b=DICT.idx.get(hint),d=DICT.dim;
+  let c=0;for(let j=0;j<d;j++)c+=DICT.V[a*d+j]*DICT.V[b*d+j];
+  return Math.max(0,Math.min(99,Math.round((c-0.10)/(0.837-0.10)*100)));
+}
+function dealEnvelopes(n){
+  const pool=shuffle(DICT.env.slice()),out=[];
+  for(let i=0;i<n;i++) out.push(pool.slice(i*5,i*5+5));
+  return out;
+}
+
+/* ---------- flow ---------- */
+function startGame(){
+  const names=[...document.querySelectorAll("[data-name]")].map(i=>i.value.trim()).filter(Boolean);
+  if(names.length<2){S.msg="플레이어(팀)는 2명 이상이어야 합니다.";return render()}
+  if(new Set(names).size!==names.length){S.msg="플레이어 이름이 겹치지 않게 해 주세요.";return render()}
+  if(!DICT){S.msg="단어 사전을 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.";return render()}
+  S.preset=$("preset").value;
+  const pool=dealEnvelopes(names.length);
+  S.players=names.map((n,i)=>({name:n,env:pool[i],used:[],hw:null,score:0,guess:"",sub:false,ok:false}));
+  S.order=shuffle(names.map((_,i)=>i));
+  S.round=1;S.turn=0;S.pick=0;S.pickOpen=false;S.pickSel=null;S.msg="";S.phase="order";render();
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function beginTurn(){S.cha=1;S.hints=[];S.chaCount=0;S.phase="ready";S.msg="";render()}
+function startHint(){S.chaCount=0;S.timerEnd=Date.now()+cfg().hintSec*1000;S.phase="hint";S.msg="";render()}
+function endHint(why){
+  S.msg=why==="95"?"유사도 95% 이상 힌트가 나와 힌트 제시가 끝났습니다.":why==="max"?`힌트 ${cfg().hintMax}개를 모두 제시했습니다.`:why==="time"?"힌트 제한 시간이 끝났습니다.":"진행자가 힌트 제시를 마쳤습니다.";
+  S.players.forEach(p=>{p.guess="";p.sub=false;p.ok=false});
+  S.timerEnd=Date.now()+cfg().guessSec*1000;S.phase="guess";render();
+}
+async function submitHint(){
+  if(busy) return;
+  const inp=$("hintIn"), w=norm(inp.value), p=presenter();
+  if(!/^[가-힣]+$/.test(w)){S.msg="힌트는 한글 명사로만 입력해 주세요.";return render()}
+  if(S.hints.some(h=>h.w===w)){S.msg="이미 제시한 힌트입니다.";return render()}
+  if(!DICT.idx.has(w)){S.msg=`「${w}」은(는) 단어 사전(${DICT.words.length.toLocaleString()}개)에 없는 단어입니다. 다른 명사로 바꿔 주세요. 제시 횟수는 차감되지 않습니다.`;return render()}
+  const score=similarity(p.hw,w);
+  busy=false;
+  S.hints.push({w,s:score,cha:S.cha});S.chaCount++;S.msg="";save();
+  if(score>=95) return endHint("95");
+  if(S.chaCount>=cfg().hintMax) return endHint("max");
+  render();
+}
+function reveal(){
+  const p=presenter();
+  S.players.forEach((q,i)=>{if(i!==S.order[S.turn]) q.ok=!!q.guess&&norm(q.guess)===norm(p.hw)});
+  S.phase="reveal";render();
+}
+function confirmResult(){
+  const pi=S.order[S.turn], winners=S.players.filter((q,i)=>i!==pi&&q.ok);
+  if(winners.length){winners.forEach(q=>q.score+=1*mult());
+    S.result={hit:true,text:`${winners.map(q=>q.name).join(", ")} 정답! 각 ${mult()}점 획득`}}
+  else{const pts=S.cha*mult();S.players[pi].score+=pts;
+    S.result={hit:false,text:`아무도 못 맞혔습니다. 출제자 ${S.players[pi].name} ${pts}점 획득`}}
+  S.phase="result";render();
+}
+function nextStep(){
+  if(!S.result.hit&&S.cha<3){S.cha++;S.phase="ready";return render()}
+  S.players[S.order[S.turn]].used.push(S.players[S.order[S.turn]].hw);
+  S.turn++;
+  if(S.turn<S.players.length) return beginTurn();
+  if(S.round===1){S.round=2;S.turn=0;S.pick=0;S.pickOpen=false;S.pickSel=null;S.players.forEach(p=>p.hw=null);S.phase="pick";return render()}
+  S.phase="final";render();
+}
+
+/* ---------- views ---------- */
+function vSetup(){
+  return `<h2>게임 준비</h2><p class="lead">진행자가 스크린에 띄워 운영하는 화면입니다. 플레이어(팀) 이름과 봉투 단어를 확인하고 시작하세요.</p>
+  ${S.msg?`<div class="msg err">${esc(S.msg)}</div>`:""}
+  <label for="preset">진행 시간</label>
+  <select id="preset">${Object.entries(PRESETS).map(([k,v])=>`<option value="${k}"${S.preset===k?" selected":""}>${v.label}</option>`).join("")}</select>
+  <h3 style="margin:22px 0 10px;font-size:24px">플레이어 (2~8명/팀)</h3>
+  <div class="grid">${S.names.map((n,i)=>`<div><label for="nm${i}">플레이어 ${i+1}</label><input id="nm${i}" data-name value="${esc(n)}" style="width:100%"></div>`).join("")}</div>
+  <div class="row" style="margin-top:10px"><button class="ghost" id="addP"${S.names.length>=8?" disabled":""}>플레이어 추가</button><button class="ghost" id="delP"${S.names.length<=2?" disabled":""}>마지막 플레이어 빼기</button></div>
+  <h3 style="margin:22px 0 4px;font-size:24px">단어 봉투</h3>
+  <p class="note">시작하면 단어 사전에서 봉투마다 명사 5개를 무작위로 넣습니다. 진행자도 미리 볼 수 없고, 각 조가 자기 봉투를 열 때만 보입니다.</p>
+  <div class="row" style="margin-top:26px"><button id="startBtn">추첨하고 시작</button></div>`;
+}
+function vOrder(){
+  return `<h2>출제 순서 추첨 결과</h2><p class="lead">봉투는 무작위로 만들어 배정했습니다. 이 순서대로 1·2라운드 모두 출제합니다.</p>
+  <div class="rank">${S.order.map((pi,k)=>`<div class="rk"><span>${k+1}</span><span>${esc(S.players[pi].name)}</span><span></span></div>`).join("")}</div>
+  <button id="toPick">${S.round}라운드 히든 워드 고르기</button>`;
+}
+function vPick(){
+  const p=S.players[S.order[S.pick]];
+  if(!S.pickOpen) return `<div class="cover"><div class="big">${esc(p.name)} 차례</div>
+    <p>${esc(p.name)}만 화면을 보세요. 다른 사람은 고개를 돌려 주세요.</p>
+    <p class="note">${S.round}라운드 히든 워드 선택 · ${S.pick+1}/${S.players.length}</p>
+    <button id="openPick">봉투 열기</button></div>`;
+  return `<h2>${esc(p.name)}의 봉투</h2><p class="lead">${S.round}라운드 히든 워드로 쓸 단어 하나를 고르세요.${S.round===2?" 1라운드에 쓴 단어는 고를 수 없습니다.":""}</p>
+  <div class="words">${p.env.map(w=>`<button class="word${S.pickSel===w?" sel":""}" data-w="${esc(w)}"${p.used.includes(w)?" disabled":""}>${esc(w)}</button>`).join("")}</div>
+  <button id="donePick"${S.pickSel?"":" disabled"}>이 단어로 정하고 화면 가리기</button>`;
+}
+function hintList(){
+  if(!S.hints.length) return `<p class="note">아직 제시된 힌트가 없습니다.</p>`;
+  let out="",last=0;
+  S.hints.forEach((h,i)=>{if(h.cha!==last){last=h.cha;out+=`<div class="cha">${h.cha}차 힌트</div>`}
+    out+=`<div class="hint"><span class="n">${i+1}</span><span class="w">${esc(h.w)}</span><span class="bar"><i style="width:${h.s}%;--c:${color(h.s)}"></i></span><span class="p">${h.s}%</span></div>`});
+  return `<div class="hints">${out}</div>`;
+}
+function peekBtn(){return `<button class="ghost peek" id="peek">출제자 단어 확인 (누르는 동안 보임)</button>`}
+function vReady(){
+  const p=presenter();
+  return `<h2>${esc(p.name)} 출제 · ${S.cha}차 힌트</h2>
+  <p class="lead">${S.cha===1?"출제자는 히든 워드와 관련된 한글 명사를 힌트로 냅니다.":`아무도 맞히지 못했습니다. 이번 ${S.cha}차에 아무도 못 맞히면 출제자는 ${S.cha*mult()}점을 얻습니다.`} 힌트는 ${cfg().hintMax}개, ${Math.round(cfg().hintSec/60)}분까지입니다.</p>
+  ${S.hints.length?hintList():""}
+  <div class="row"><button id="goHint">${S.cha}차 힌트 시작</button>${peekBtn()}</div>`;
+}
+function vHint(){
+  const left=cfg().hintMax-S.chaCount;
+  return `<div class="row" style="justify-content:space-between"><div><h2>${esc(presenter().name)} · ${S.cha}차 힌트</h2><p class="lead" style="margin:0">남은 힌트 ${left}개</p></div><div class="clock" id="clock"></div></div>
+  ${S.msg?`<div class="msg${busy?"":" err"}">${esc(S.msg)}</div>`:""}
+  ${hintList()}
+  <form id="hintForm" class="row">
+    <input id="hintIn" placeholder="힌트 단어 (한글 명사)" autocomplete="off" style="flex:1 1 220px" ${busy?"disabled":""}>
+    <button type="submit"${busy?" disabled":""}>${busy?"계산 중…":"힌트 공개"}</button>
+  </form>
+  <div class="row" style="margin-top:12px">${peekBtn()}<button class="ghost" id="stopHint">힌트 제시 마치기</button></div>
+  <p class="note">유사도는 한국어 단어 벡터(fastText, 명사 ${DICT?DICT.words.length.toLocaleString():""}개)로 계산합니다. 사전에 없는 단어는 힌트로 쓸 수 없습니다.</p>`;
+}
+function vGuess(){
+  const pi=S.order[S.turn];
+  return `<div class="row" style="justify-content:space-between"><div><h2>정답 맞히기</h2><p class="lead" style="margin:0">${esc(S.msg)}</p></div><div class="clock" id="clock"></div></div>
+  ${hintList()}
+  <p>각자 이름을 눌러 아무도 보지 않게 정답을 적으세요. 모두 적으면 동시에 공개합니다.</p>
+  <div class="gl">${S.players.map((q,i)=>i===pi?"":`<button class="${q.sub?"ghost":""}" data-g="${i}">${esc(q.name)} ${q.sub?"✓ 제출 완료":"정답 적기"}</button>`).join("")}</div>
+  <div class="row" style="margin-top:20px"><button id="revealBtn" class="warn">동시 공개</button></div>`;
+}
+function vReveal(){
+  const pi=S.order[S.turn],p=S.players[pi];
+  return `<h2>정답은 「${esc(p.hw)}」</h2><p class="lead">자동 판정 결과입니다. 띄어쓰기 차이 등은 진행자가 체크로 바로잡은 뒤 확정하세요.</p>
+  <div class="gl">${S.players.map((q,i)=>i===pi?"":`<div class="gc${q.ok?" ok":""}"><div class="note" style="color:#7b5670">${esc(q.name)}</div><div class="big">${q.guess?esc(q.guess):"(미제출)"}</div>
+  <label class="check"><input type="checkbox" data-ok="${i}"${q.ok?" checked":""}> 정답 인정</label></div>`).join("")}</div>
+  <div class="row" style="margin-top:20px"><button id="confirmBtn">점수 확정</button></div>`;
+}
+function vResult(){
+  const last=!S.result.hit&&S.cha<3?`${S.cha+1}차 힌트로`:"다음 출제자로";
+  return `<h2>${esc(S.result.text)}</h2><p class="lead">${S.result.hit||S.cha>=3?`${esc(presenter().name)}의 출제가 끝났습니다. 히든 워드는 「${esc(presenter().hw)}」였습니다.`:"출제자는 같은 히든 워드로 다음 차 힌트를 이어서 냅니다."}</p>
+  ${hintList()}<button id="nextBtn">${last}</button>`;
+}
+function vFinal(){
+  const sorted=S.players.slice().sort((a,b)=>b.score-a.score);let rank=0,prev=null;
+  return `<h2>최종 순위</h2><p class="lead">2라운드가 모두 끝났습니다.</p>
+  <div class="rank">${sorted.map((p,k)=>{if(p.score!==prev){rank=k+1;prev=p.score}return `<div class="rk${rank===1?" first":""}"><span>${rank}</span><span>${esc(p.name)}</span><span>${p.score}점</span></div>`}).join("")}</div>
+  <button id="again">같은 플레이어로 다시 하기</button>`;
+}
+function vModal(){
+  const q=S.players[modal];
+  return `<div class="modal"><form class="cover" id="gForm"><div class="big">${esc(q.name)}</div><p>다른 사람이 보지 않게 정답을 적으세요.</p>
+  <input id="gIn" autocomplete="off" placeholder="정답 단어" style="width:100%;margin-bottom:14px" value="${esc(q.guess)}">
+  <div class="row" style="justify-content:center"><button type="submit">제출하고 가리기</button><button type="button" class="ghost" id="gCancel" style="color:var(--cink);border-color:#b99">취소</button></div></form></div>`;
+}
+
+function render(){
+  const V={setup:vSetup,order:vOrder,pick:vPick,ready:vReady,hint:vHint,guess:vGuess,reveal:vReveal,result:vResult,final:vFinal};
+  $("stage").innerHTML=V[S.phase]();
+  $("modalRoot").innerHTML=modal!=null?vModal():"";
+  const st=[];
+  if(S.phase!=="setup"){st.push(`<span class="pill">${S.round}라운드 · 점수 <b>×${mult()}</b></span>`);
+    if(["ready","hint","guess","reveal","result"].includes(S.phase)) st.push(`<span class="pill">출제자 <b>${esc(presenter().name)}</b> · ${S.cha}차</span>`)}
+  st.push(`<span class="pill">단어 사전 <b>${aiState==="on"?"준비됨":aiState==="off"?"불러오기 실패":"불러오는 중"}</b></span>`);
+  $("status").innerHTML=st.join("");
+  const cur=["ready","hint","guess","reveal","result"].includes(S.phase)?S.order[S.turn]:-1;
+  $("board").innerHTML=S.players.length?S.order.map((pi,k)=>{const p=S.players[pi];return `<div class="pl${pi===cur?" now":""}"><span class="o">${k+1}</span><span>${esc(p.name)}</span><span class="sc">${p.score}</span></div>`}).join(""):`<p class="note">게임을 시작하면 점수가 표시됩니다.</p>`;
+  bind();updateClock();save();
+  if(S.phase==="hint"&&!busy){const h=$("hintIn");if(h)h.focus()}
+  if(modal!=null){const g=$("gIn");if(g)g.focus()}
+}
+function bind(){
+  const on=(id,ev,fn)=>{const el=$(id);if(el)el.addEventListener(ev,fn)};
+  on("addP","click",()=>{keepSetup();S.names.push(`${S.names.length+1}팀`);render()});
+  on("delP","click",()=>{keepSetup();S.names.pop();render()});
+  on("startBtn","click",()=>{keepSetup();startGame()});
+  on("toPick","click",()=>{S.phase="pick";render()});
+  on("openPick","click",()=>{S.pickOpen=true;S.pickSel=null;render()});
+  document.querySelectorAll("[data-w]").forEach(b=>b.addEventListener("click",()=>{S.pickSel=b.dataset.w;render()}));
+  on("donePick","click",()=>{S.players[S.order[S.pick]].hw=S.pickSel;S.pickOpen=false;S.pickSel=null;S.pick++;
+    if(S.pick>=S.players.length){S.turn=0;beginTurn()}else render()});
+  on("goHint","click",startHint);
+  on("hintForm","submit",e=>{e.preventDefault();submitHint()});
+  on("stopHint","click",()=>endHint("stop"));
+  const pk=$("peek");
+  if(pk){const show=()=>{pk.textContent=`히든 워드: ${presenter().hw}`},hide=()=>{pk.textContent="출제자 단어 확인 (누르는 동안 보임)"};
+    pk.addEventListener("pointerdown",show);["pointerup","pointerleave","pointercancel","blur"].forEach(ev=>pk.addEventListener(ev,hide))}
+  document.querySelectorAll("[data-g]").forEach(b=>b.addEventListener("click",()=>{modal=Number(b.dataset.g);render()}));
+  on("gForm","submit",e=>{e.preventDefault();const q=S.players[modal];q.guess=norm($("gIn").value);q.sub=!!q.guess;modal=null;render()});
+  on("gCancel","click",()=>{modal=null;render()});
+  on("revealBtn","click",reveal);
+  document.querySelectorAll("[data-ok]").forEach(c=>c.addEventListener("change",()=>{S.players[Number(c.dataset.ok)].ok=c.checked;render()}));
+  on("confirmBtn","click",confirmResult);
+  on("nextBtn","click",nextStep);
+  on("again","click",()=>{S.names=S.players.map(p=>p.name);S.phase="setup";S.players=[];S.order=[];render()});
+}
+function keepSetup(){
+  const n=[...document.querySelectorAll("[data-name]")];if(n.length)S.names=n.map(i=>i.value);
+  const p=$("preset");if(p)S.preset=p.value;
+}
+function updateClock(){
+  const c=$("clock");if(!c)return;
+  const ms=Math.max(0,S.timerEnd-Date.now()),s=Math.ceil(ms/1000);
+  c.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+  c.classList.toggle("low",s<=30);
+  if(ms<=0&&S.phase==="hint"&&!busy) endHint("time");
+  else if(ms<=0&&S.phase==="guess") c.textContent="시간 종료";
+}
+$("resetBtn").addEventListener("click",()=>{
+  if($("resetBtn").dataset.arm){S=fresh();cache={};modal=null;delete $("resetBtn").dataset.arm;$("resetBtn").textContent="새 게임";render()}
+  else{$("resetBtn").dataset.arm="1";$("resetBtn").textContent="한 번 더 누르면 초기화";setTimeout(()=>{const b=$("resetBtn");if(b){delete b.dataset.arm;b.textContent="새 게임"}},3000)}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal!=null){modal=null;render()}});
+
+load();render();
+tick=setInterval(updateClock,250);
+loadDict();
+}
+</script>
+</body>
+</html>
