@@ -157,7 +157,7 @@ function viewFor(pid){
   const showAns=["reveal","result","final"].includes(G.phase);
   return {phase:G.phase,preset:G.preset,cfg:cfg(),round:G.round,turn:G.turn,cha:G.cha,chaCount:G.chaCount,
     hints:G.hints,msg:G.msg,result:G.result,order:G.order,presenter:["ready","hint","guess","reveal","result"].includes(G.phase)?presenterId():null,
-    remaining:G.timerEnd?Math.max(0,G.timerEnd-Date.now()):0,hostPid:G.hostPid,
+    remaining:G.timerEnd?Math.max(0,G.timerEnd-Date.now()):0,autoLeft:G.autoAt?Math.max(0,G.autoAt-Date.now()):0,hostPid:G.hostPid,
     answer:showAns&&G.phase!=="final"?P(presenterId())?.hw:null,
     players:G.players.map(p=>({id:p.id,name:p.name,on:p.id===G.hostPid||!!(conns.get(p.id)&&conns.get(p.id).open),score:p.score,
       picked:!!p.hw,sub:p.sub,ok:showAns?p.ok:false,guess:showAns?p.guess:""})),
@@ -171,9 +171,9 @@ function hostStart(){
   G.order=shuffle(G.players.map(p=>p.id));G.round=1;G.turn=0;G.msg="";G.phase="pick";sync();
 }
 function allPicked(){return G.players.every(p=>p.hw)}
-function beginTurn(){const pp=P(presenterId());if(pp&&pp.hw&&DICT)tableFor(pp.hw).catch(()=>{});G.cha=1;G.hints=[];G.chaCount=0;G.timerEnd=0;G.msg="";G.phase="ready";
+function beginTurn(){const pp=P(presenterId());if(pp&&pp.hw&&DICT)tableFor(pp.hw).catch(()=>{});G.cha=1;G.hints=[];G.chaCount=0;G.timerEnd=0;G.msg="";G.phase="ready";G.autoAt=Date.now()+20000;
   if(!P(presenterId()))return nextPresenter();sync()}
-function startHint(){G.chaCount=0;G.timerEnd=Date.now()+cfg().hintSec*1000;G.phase="hint";G.msg="";sync()}
+function startHint(){G.autoAt=0;G.chaCount=0;G.timerEnd=Date.now()+cfg().hintSec*1000;G.phase="hint";G.msg="";sync()}
 function endHint(why){
   G.msg=why==="95"?"유사도 95% 이상 힌트가 나와 힌트 제시가 끝났습니다.":why==="max"?`힌트 ${cfg().hintMax}개를 모두 제시했습니다.`:why==="time"?"힌트 제한 시간이 끝났습니다.":"힌트 제시를 마쳤습니다.";
   G.players.forEach(p=>{p.guess="";p.sub=false;p.ok=false});
@@ -182,16 +182,16 @@ function endHint(why){
 function reveal(){
   const ans=P(presenterId()).hw;
   G.players.forEach(p=>{if(p.id!==presenterId())p.ok=!!p.guess&&norm(p.guess)===norm(ans)});
-  G.timerEnd=0;G.phase="reveal";sync();
+  G.timerEnd=0;G.phase="reveal";G.autoAt=Date.now()+10000;sync();
 }
-function confirmResult(){
+function confirmResult(){G.autoAt=0;
   const pid=presenterId(),w=G.players.filter(p=>p.id!==pid&&p.ok);
   if(w.length){w.forEach(p=>p.score+=mult());G.result={hit:true,text:`${w.map(p=>p.name).join(", ")} 정답! 각 ${mult()}점`}}
   else{const pts=G.cha*mult();P(pid).score+=pts;G.result={hit:false,text:`아무도 못 맞혔습니다. 출제자 ${P(pid).name} ${pts}점`}}
-  G.phase="result";sync();
+  G.phase="result";G.autoAt=Date.now()+7000;sync();
 }
-function nextStep(){
-  if(!G.result.hit&&G.cha<3){G.cha++;G.chaCount=0;G.timerEnd=0;G.phase="ready";G.msg="";return sync()}
+function nextStep(){G.autoAt=0;
+  if(!G.result.hit&&G.cha<3){G.cha++;G.chaCount=0;G.timerEnd=0;G.phase="ready";G.msg="";G.autoAt=Date.now()+20000;return sync()}
   nextPresenter();
 }
 function nextPresenter(){
@@ -231,7 +231,7 @@ function handle(pid,a){
       const need=G.players.filter(x=>x.id!==presenterId()&&(x.id===G.hostPid||(conns.get(x.id)&&conns.get(x.id).open)));
       if(need.every(x=>x.sub))reveal();else sync()}break;
     case "reveal":if(ctl&&G.phase==="guess")reveal();break;
-    case "ok":if(ctl&&G.phase==="reveal"){const q=P(a.id);if(q){q.ok=!!a.v;sync()}}break;
+    case "ok":if(ctl&&G.phase==="reveal"){const q=P(a.id);if(q){q.ok=!!a.v;G.autoAt=Date.now()+10000;sync()}}break;
     case "confirm":if(ctl&&G.phase==="reveal")confirmResult();break;
     case "next":if(ctl&&G.phase==="result")nextStep();break;
     case "skip":if(isHost&&presOff&&["ready","hint","guess","reveal","result"].includes(G.phase)){G.result={hit:true,text:"출제자 연결이 끊겨 방장이 건너뛰었습니다."};nextPresenter()}break;
@@ -247,6 +247,7 @@ async function scoreHint(hw,w){
 }
 function hostTick(){
   if(!G)return;
+  if(G.autoAt&&Date.now()>=G.autoAt){const ph=G.phase;G.autoAt=0;if(ph==="ready")return startHint();if(ph==="reveal")return confirmResult();if(ph==="result")return nextStep()}
   if(G.timerEnd&&Date.now()>=G.timerEnd){
     if(G.phase==="hint")endHint("time");
     else if(G.phase==="guess")reveal();
@@ -404,7 +405,7 @@ function vReady(){
   return `<h2>${esc(nameOf(V.presenter))} 출제 · ${V.cha}차 힌트</h2>
   <p class="lead">${V.cha===1?"출제자가 히든 워드와 관련된 명사를 힌트로 냅니다.":`아무도 못 맞혔습니다. 이번 ${V.cha}차에도 못 맞히면 출제자가 ${V.cha*(V.round===2?2:1)}점을 얻습니다.`} 힌트 ${cf.hintMax}개, ${Math.round(cf.hintSec/60)}분.</p>
   ${V.hints.length?hintList():""}
-  <div class="row">${canCtl()?`<button id="goHint">${V.cha}차 힌트 시작</button>`:`<p>출제자가 시작하기를 기다리는 중…</p>`}${peekBtn()}${skipBtn()}</div>${presTag()}`;
+  ${V.presenter===myPid?`<div class="msg"><b>내 차례입니다!</b> 준비되면 「${V.cha}차 힌트 시작」을 누르세요.</div>`:""}<p class="note"><b id="autoLeft"></b></p><div class="row">${canCtl()?`<button id="goHint">${V.cha}차 힌트 시작</button>`:`<p>${esc(nameOf(V.presenter))}가 시작하기를 기다리는 중…</p>`}${peekBtn()}${skipBtn()}</div>${presTag()}`;
 }
 function vHint(){
   const pres=V.presenter===myPid,left=V.cfg.hintMax-V.chaCount;
@@ -426,7 +427,7 @@ function vGuess(){
   ${canCtl()?`<div class="row" style="margin-top:12px"><button class="warn" id="revealBtn">지금 공개</button>${skipBtn()}</div>`:""}${presTag()}`;
 }
 function vReveal(){
-  return `<h2>정답은 「${esc(V.answer)}」</h2><p class="lead">${canCtl()?"자동 판정 결과입니다. 필요하면 체크로 바로잡은 뒤 확정하세요.":"출제자가 점수를 확정하는 중입니다."}</p>
+  return `<h2>정답은 「${esc(V.answer)}」</h2><p class="lead">${canCtl()?"자동 판정 결과입니다. 필요하면 체크로 바로잡으세요.":"정답을 확인하세요."} <b id="autoLeft"></b></p>
   <div class="gl">${V.players.filter(p=>p.id!==V.presenter).map(p=>`<div class="gc${p.ok?" ok":""}"><div class="note" style="color:#7b5670">${esc(p.name)}</div><div class="big">${p.guess?esc(p.guess):"(미제출)"}</div>
   ${canCtl()?`<label class="check"><input type="checkbox" data-ok="${esc(p.id)}"${p.ok?" checked":""}> 정답 인정</label>`:p.ok?"<b>정답</b>":""}</div>`).join("")}</div>
   ${canCtl()?`<div class="row" style="margin-top:18px"><button id="confirmBtn">점수 확정</button>${skipBtn()}</div>`:""}${presTag()}`;
@@ -434,7 +435,7 @@ function vReveal(){
 function vResult(){
   const more=!V.result.hit&&V.cha<3;
   return `<h2>${esc(V.result.text)}</h2><p class="lead">${more?"출제자는 같은 히든 워드로 다음 차 힌트를 이어서 냅니다.":`히든 워드는 「${esc(V.answer)}」였습니다.`}</p>
-  ${hintList()}${canCtl()?`<button id="nextBtn">${more?`${V.cha+1}차 힌트로`:"다음 출제자로"}</button>`:`<p class="note">출제자(${esc(nameOf(V.presenter))})가 다음으로 넘기면 진행됩니다.</p>`}${presTag()}`;
+  ${hintList()}${canCtl()?`<button id="nextBtn">${more?`${V.cha+1}차 힌트로`:"다음 출제자로"}</button> <b id="autoLeft"></b>`:`<p class="note">잠시 뒤 자동으로 넘어갑니다. <b id="autoLeft"></b></p>`}${presTag()}`;
 }
 function vFinal(){
   const s=V.players.slice().sort((a,b)=>b.score-a.score);let rank=0,prev=null;
@@ -499,6 +500,7 @@ function bind(){
     pk.addEventListener("pointerdown",s);["pointerup","pointerleave","pointercancel"].forEach(ev=>pk.addEventListener(ev,h))}
 }
 function tickClock(){
+  const al=$("autoLeft");if(al&&V&&V.autoLeft){const s=Math.ceil(Math.max(0,V.autoLeft-(Date.now()-recvAt))/1000);al.textContent=s>0?`${s}초 뒤 자동 진행`:"넘어가는 중…"}
   const c=$("clock");if(!c||!V)return;
   const s=Math.ceil(remaining()/1000);
   c.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;c.classList.toggle("low",s<=30);
