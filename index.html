@@ -146,7 +146,7 @@ const mult=()=>G.round===2?2:1;
 const P=id=>G.players.find(p=>p.id===id);
 const presenterId=()=>G.order[G.turn];
 
-function hostSave(){ss.set(PREFIX+code,JSON.stringify({G,hostPid:myPid}))}
+function hostSave(){const s=JSON.stringify({G,hostPid:myPid});ss.set(PREFIX+code,s);ls.set(PREFIX+code,s)}
 function sync(){
   hostSave();
   for(const [pid,c] of conns){if(c.open)try{c.send({t:"state",v:viewFor(pid)})}catch(e){}}
@@ -284,23 +284,33 @@ async function becomeHost(name,existing){
   else{myPid=newId();G={phase:"lobby",preset:"short",hostPid:myPid,players:[{id:myPid,name:String(name).trim().slice(0,12)||"방장",score:0,env:[],used:[],hw:null,guess:"",sub:false,ok:false}],
     order:[],round:1,turn:0,cha:1,hints:[],chaCount:0,timerEnd:0,msg:"",result:null}}
   hostSave();
-  let tries=0;
-  const open=()=>{
-    peer=new Peer("hw-"+code,{debug:0});
-    peer.on("open",()=>{net="online";sync()});
-    peer.on("connection",onGuestConn);
-    peer.on("disconnected",()=>{net="reconnecting";render();try{peer.reconnect()}catch(e){}});
-    peer.on("error",e=>{
-      if(e.type==="unavailable-id"&&tries++<12){net="connecting";render();try{peer.destroy()}catch(x){}setTimeout(open,2500)}
-      else if(e.type==="unavailable-id"){net="error";localErr="이 방 코드를 이미 다른 화면에서 방장으로 열고 있습니다. 그 화면을 닫고 새로고침하세요.";render()}
-      else if(["network","server-error","socket-error","socket-closed"].includes(e.type)){net="reconnecting";render()}
-    });
-  };
-  open();V=viewFor(myPid);recvAt=Date.now();render();
+  hostOpen();V=viewFor(myPid);recvAt=Date.now();render();keepAwake();
 }
+let hostTries=0,wakeLock=null;
+function hostOpen(){
+  try{if(peer&&!peer.destroyed)peer.destroy()}catch(e){}
+  peer=new Peer("hw-"+code,{debug:0});
+  peer.on("open",()=>{net="online";hostTries=0;sync()});
+  peer.on("connection",onGuestConn);
+  peer.on("disconnected",()=>{net="reconnecting";render();try{peer.reconnect()}catch(e){}});
+  peer.on("error",e=>{
+    if(e.type==="unavailable-id"&&hostTries++<15){net="connecting";render();setTimeout(hostOpen,3000)}
+    else if(e.type==="unavailable-id"){net="error";localErr="이 방 코드를 이미 다른 화면에서 방장으로 열고 있습니다. 그 화면을 닫고 새로고침하세요.";render()}
+    else if(["network","server-error","socket-error","socket-closed"].includes(e.type)){net="reconnecting";render()}
+  });
+}
+function hostWatch(){
+  if(role!=="host"||net==="error")return;
+  if(!peer||peer.destroyed)hostOpen();
+  else if(peer.disconnected){net="reconnecting";render();try{peer.reconnect()}catch(e){hostOpen()}}
+}
+async function keepAwake(){try{if(navigator.wakeLock&&document.visibilityState==="visible"&&!wakeLock){wakeLock=await navigator.wakeLock.request("screen");wakeLock.addEventListener("release",()=>{wakeLock=null})}}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(role==="host"){hostWatch();keepAwake()}else if(role==="guest"&&peer){if(peer.disconnected)try{peer.reconnect()}catch(e){}if(!(gConn&&gConn.open))connectHost()}}});
+setInterval(hostWatch,5000);
+
 
 /* ================= 참가자(게스트) ================= */
-let gConn=null,gName="",retryTimer=null;
+let gConn=null,gName="",retryTimer=null,openTimer=null,slow=false,connStart=0;
 function becomeGuest(name){
   role="guest";gName=String(name).trim().slice(0,12)||"참가자";myPid=ls.get("hw-pid-"+code);net="connecting";render();
   peer=new Peer({debug:0});
@@ -315,7 +325,8 @@ function retry(){clearTimeout(retryTimer);retryTimer=setTimeout(()=>{if(peer&&!p
 function connectHost(){
   if(gConn&&gConn.open)return;
   const c=peer.connect("hw-"+code,{reliable:true,serialization:"json"});gConn=c;
-  c.on("open",()=>{net="online";c.send({t:"hello",pid:myPid,name:gName});render()});
+  clearTimeout(openTimer);openTimer=setTimeout(()=>{if(!c.open){slow=true;try{c.close()}catch(e){}if(net!=="nohost"){net="connecting";render()}retry()}},12000);
+  c.on("open",()=>{clearTimeout(openTimer);slow=false;net="online";c.send({t:"hello",pid:myPid,name:gName});render()});
   c.on("data",d=>{
     if(!d||typeof d!=="object")return;
     if(d.t==="welcome"){myPid=d.pid;ls.set("hw-pid-"+code,myPid)}
@@ -328,6 +339,13 @@ function connectHost(){
   c.on("error",()=>{net="reconnecting";render();retry()});
 }
 
+function takeOver(){
+  clearTimeout(retryTimer);clearTimeout(openTimer);
+  try{if(gConn)gConn.close()}catch(e){}try{if(peer)peer.destroy()}catch(e){}
+  gConn=null;peer=null;V=null;localErr="";
+  let saved=null;try{saved=JSON.parse(ls.get(PREFIX+code)||"null")}catch(e){}
+  becomeHost(gName||ls.get("hw-name")||"방장",saved&&saved.G?saved:null).catch(()=>{localErr="단어 사전을 불러오지 못했습니다. 새로고침해 주세요.";render()});
+}
 /* ================= 보내기 ================= */
 function act(a){localErr="";if(role==="host")handle(myPid,a);else if(gConn&&gConn.open)gConn.send(a);else{localErr="연결이 끊겼습니다. 다시 연결하는 중입니다.";render()}}
 
@@ -350,7 +368,8 @@ const errBox=()=>localErr?`<div class="msg err">${esc(localErr)}</div>`:"";
 function vEntry(){
   const room=roomFromHash(),saved=ls.get("hw-name")||"";
   if(room)return `<div class="cover"><div class="big">방 ${esc(room)} 참가</div><p class="lead">이름(또는 팀 이름)을 입력하고 들어가세요.</p>
-    <form id="joinForm" class="row" style="justify-content:center"><input id="nameIn" maxlength="12" placeholder="예: 3팀" value="${esc(saved)}" style="flex:1 1 200px;max-width:300px"><button type="submit">참가하기</button></form>${errBox()}</div>`;
+    <form id="joinForm" class="row" style="justify-content:center"><input id="nameIn" maxlength="12" placeholder="예: 3팀" value="${esc(saved)}" style="flex:1 1 200px;max-width:300px"><button type="submit">참가하기</button></form>${errBox()}
+    ${ls.get(PREFIX+room)?`<p class="lead" style="margin-top:16px">이 기기에서 만든 방입니다.</p><button class="ghost" id="resumeHost" style="color:var(--cink);border-color:#c9a">방장으로 이어서 열기</button>`:""}</div>`;
   return `<h2>방 만들기</h2><p class="lead">방을 만들면 초대 링크가 생깁니다. 링크로 들어온 사람끼리 한 게임에 연결됩니다.</p>
     <form id="hostForm" class="row"><input id="nameIn" maxlength="12" placeholder="내 이름(또는 팀 이름)" value="${esc(saved)}" style="flex:1 1 220px;max-width:340px"><button type="submit">방 만들기</button></form>${errBox()}
     <p class="note" style="margin-top:18px">방을 만든 사람(방장)의 화면이 게임을 관리합니다. 게임 중에는 방장 화면을 닫지 마세요.</p>`;
@@ -359,6 +378,7 @@ function vLobby(){
   const host=isHost();
   return `<h2>대기실</h2>
   <p class="lead">${host?"아래 링크를 팀원에게 보내세요. 모두 들어오면 시작하세요.":"방장이 시작할 때까지 기다려 주세요."}</p>
+  ${host?`<div class="msg">방장 화면이 게임을 관리합니다. 링크를 보낸 뒤 바로 이 화면으로 돌아오고, 게임이 끝날 때까지 화면을 켜 두세요.</div>`:""}
   <div class="code">${esc(code)}</div>
   <div class="link"><code>${esc(inviteLink())}</code><button class="ghost" id="copyBtn">링크 복사</button></div>
   ${V.msg?`<div class="msg err">${esc(V.msg)}</div>`:""}
@@ -423,9 +443,12 @@ function vFinal(){
 }
 function vNet(){
   if(net==="denied")return `<div class="cover"><div class="big">들어갈 수 없습니다</div><p class="lead">${esc(localErr)}</p><button id="homeBtn">새 방 만들기 화면으로</button></div>`;
-  if(net==="nohost")return `<div class="cover"><div class="big">방장을 찾는 중…</div><p class="lead">방 ${esc(code)}의 방장 화면이 열려 있지 않거나 연결이 불안정합니다. 방장이 다시 열면 자동으로 연결됩니다.</p></div>`;
+  if(net==="nohost")return `<div class="cover"><div class="big">방장을 찾는 중…</div>
+    <p class="lead">방 ${esc(code)}의 방장 화면에 연결되지 않습니다. 3초마다 자동으로 다시 시도하고 있습니다.</p>
+    <p class="lead" style="text-align:left">· 방장 폰이 다른 앱으로 넘어가 있으면 연결이 끊깁니다. 방장에게 게임 화면으로 돌아와 달라고 하세요.<br>· 지난 방 링크라면 방장이 새로 만든 링크로 들어오세요.<br>· 방장 본인인데 이 화면이 보이면, 아래 「내가 방장으로 열기」를 누르세요.</p>
+    <div class="row" style="justify-content:center"><button id="retryBtn">지금 다시 연결</button><button class="ghost" id="takeBtn" style="color:var(--cink);border-color:#c9a">내가 방장으로 열기</button></div></div>`;
   if(net==="error")return `<div class="cover"><div class="big">연결 오류</div><p class="lead">${esc(localErr)}</p></div>`;
-  return `<div class="cover"><div class="big">연결 중…</div><p class="lead">방 ${esc(code)}에 연결하고 있습니다.</p></div>`;
+  return `<div class="cover"><div class="big">연결 중…</div><p class="lead">방 ${esc(code)}에 연결하고 있습니다.</p>${slow?`<p class="lead">연결이 오래 걸립니다. 회사·공용 와이파이는 기기끼리 직접 연결을 막는 경우가 있습니다. 와이파이를 끄고 모바일 데이터로 바꾼 뒤 다시 열어 보세요.</p><button id="retryBtn">지금 다시 연결</button>`:""}</div>`;
 }
 function render(){
   let html;
@@ -468,6 +491,9 @@ function bind(){
   on("nextBtn","click",()=>act({t:"next"}));
   on("againBtn","click",()=>act({t:"again"}));
   on("homeBtn","click",()=>{location.hash="";location.reload()});
+  on("retryBtn","click",()=>{if(peer&&!peer.destroyed){if(peer.disconnected)try{peer.reconnect()}catch(e){}connectHost()}else becomeGuest(gName)});
+  on("takeBtn","click",takeOver);
+  on("resumeHost","click",()=>{code=roomFromHash();gName=ls.get("hw-name")||"방장";takeOver()});
   const pk=$("peek");
   if(pk){const s=()=>{peekOn=true;pk.textContent="내 히든 워드: "+V.me.hw},h=()=>{peekOn=false;pk.textContent="내 단어 확인 (누르는 동안)"};
     pk.addEventListener("pointerdown",s);["pointerup","pointerleave","pointercancel"].forEach(ev=>pk.addEventListener(ev,h))}
